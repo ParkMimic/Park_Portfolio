@@ -283,18 +283,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 313072798}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 354bf6a30df2c924a8b7c29aba9899f0, type: 3}
+  m_Script: {fileID: 11500000, guid: 05ab13c8b232a9b4faebf237e6d90269, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 3
-  jumpForce: 300
-  dashSpeed: 10
-  defaultTime: 0.5
-  dashCooldown: 1
-  wallJumpSpeed: 1
-  ghostPrefab: {fileID: 0}
-  ghostDelay: 1
-  h: 0
+  moveSpeed: 7
+  jumpForce: 5
 --- !u!1 &332668845
 GameObject:
   m_ObjectHideFlags: 0
