@@ -225,7 +225,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 2
+  m_GravityScale: 1
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -271,8 +271,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.38311708, y: -0.43784803}
-  m_Size: {x: 0.932374, y: 1.26076}
+  m_Offset: {x: -0.038426787, y: 0.72961354}
+  m_Size: {x: 0.831214, y: 1.4128742}
   m_Direction: 0
 --- !u!114 &313072803
 MonoBehaviour:
@@ -286,9 +286,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 354bf6a30df2c924a8b7c29aba9899f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 6
-  jumpPower: 10
-  wallSlidingSpeed: 2
+  speed: 3
+  jumpForce: 300
+  dashSpeed: 10
+  defaultTime: 0.5
+  dashCooldown: 1
+  wallJumpSpeed: 1
+  ghostPrefab: {fileID: 0}
+  ghostDelay: 1
+  h: 0
 --- !u!1 &332668845
 GameObject:
   m_ObjectHideFlags: 0
@@ -935,7 +941,7 @@ GameObject:
   - component: {fileID: 1834336634}
   - component: {fileID: 1834336633}
   - component: {fileID: 1834336635}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Tilemap
   m_TagString: Ground
   m_Icon: {fileID: 0}
