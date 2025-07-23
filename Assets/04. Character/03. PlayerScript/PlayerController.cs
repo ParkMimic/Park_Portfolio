@@ -99,6 +99,11 @@ public class PlayerController : MonoBehaviour
                 // 만일 더블 점프 상태라면
                 if (jumpCount == 2) isDoubleJumping = true; // 더블 점프를 true 로 줌으로서 애니메이션을 감지함.
             }
+
+            if (Input.GetKeyUp(KeyCode.Z) && rigid.linearVelocityY > 0)
+            {
+                rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
+            }
         }
 
         // 공격 관련 로직

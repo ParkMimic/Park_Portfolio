@@ -289,11 +289,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 7
-  jumpForce: 5
+  jumpForce: 7
   dashSpeed: 2
   wallSlideSpeed: 1.5
-  hurtForce: 3
-  hurtDuration: 0.5
+  comboResetTime: 1
 --- !u!95 &313072804
 Animator:
   serializedVersion: 7
