@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    // 싱글턴 패턴을 사용하깅 ㅟ한 인스턴스 변수
+    // 싱글턴 패턴을 사용하기 위한 인스턴스 변수
     private static GameManager m_instance;
     // 인스턴스에 접근하기 위한 프로퍼티
     public static GameManager Instance
@@ -22,6 +22,9 @@ public class GameManager : MonoBehaviour
             return m_instance;
         }
     }
+
+    private bool isGameOver;
+
     void Awake()
     {
         if (m_instance == null)
@@ -36,5 +39,16 @@ public class GameManager : MonoBehaviour
 
         // 씬이 전환 되더라도 선언 되었던 인스턴스가 파괴 되지 않는다.
         DontDestroyOnLoad(gameObject);
+    }
+
+    void Hit()
+    {
+
+    }
+
+    public void GameOver()
+    {
+        isGameOver = true;
+        
     }
 }
