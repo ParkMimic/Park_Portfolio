@@ -12,7 +12,14 @@ public class PlayerManager : MonoBehaviour
 
     private void Awake()
     {
-        Instance = this;
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     void Start()
@@ -20,5 +27,10 @@ public class PlayerManager : MonoBehaviour
         MaxHP = 3; // 최대 체력 3
         HP = 3; // 현재 체력 3
         Damage = 1.0f; // 공격력 1
+    }
+
+    public void TakeDamage(int attackDamage)
+    {
+        HP -= attackDamage;
     }
 }

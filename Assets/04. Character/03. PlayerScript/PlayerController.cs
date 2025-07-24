@@ -1,9 +1,10 @@
+using NUnit.Framework;
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEditor.Rendering;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : PlayerManager
 {
     [Header("플레이어 기본 설정")]
     public float moveSpeed = 1f; // 이동 속도
@@ -41,7 +42,13 @@ public class PlayerController : MonoBehaviour
     private bool isFalling = false;
     private bool isGrounded;
     private bool isGameOver = false;
-    private bool isHurt = false;
+    private bool _isHurt = false;
+    public bool isHurt
+    {
+        get { return _isHurt; }
+        set { _isHurt = value; }
+    }
+
     private bool isDash = false;
 
     // 이동 확인 변수
@@ -55,6 +62,7 @@ public class PlayerController : MonoBehaviour
 
     private bool isAttacking = false; // 공격 중 상태 확인
     private int queuedAttackCount = 0; // 사용자가 누른 X의 총 횟수
+
 
     Rigidbody2D rigid;
     SpriteRenderer spriteRenderer;
@@ -359,6 +367,8 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+
+    // 함정 감지
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("HitZone") && !isHurt)
@@ -370,8 +380,13 @@ public class PlayerController : MonoBehaviour
                 ? Vector2.left
                 : Vector2.right;
 
-            StartCoroutine(Knockback(knockDirection));
+            StartKnockback(knockDirection);
         }
+    }
+
+    public void StartKnockback(Vector2 knockDirection)
+    {
+        StartCoroutine(Knockback(knockDirection));
     }
 
 

@@ -23,8 +23,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private bool isGameOver;
-
     void Awake()
     {
         if (m_instance == null)
@@ -39,16 +37,5 @@ public class GameManager : MonoBehaviour
 
         // 씬이 전환 되더라도 선언 되었던 인스턴스가 파괴 되지 않는다.
         DontDestroyOnLoad(gameObject);
-    }
-
-    void Hit()
-    {
-
-    }
-
-    public void GameOver()
-    {
-        isGameOver = true;
-        
     }
 }

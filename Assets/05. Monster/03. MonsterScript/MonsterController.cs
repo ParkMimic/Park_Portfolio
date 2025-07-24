@@ -1,3 +1,5 @@
+using System.Collections;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 public class MonsterController : MonoBehaviour
@@ -34,6 +36,11 @@ public class MonsterController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
 
+        attackCooldown = 0; // 공격 쿨타임 초기화
+        lastAttackTime = 0; // 마지막 공격 시간도 초기화
+
+        originalColor = spriteRenderer.color;
+
         // 게임 시작 시 플레이어를 자동으로 찾기 (태그가 "Player"로 설정 되어 있어야 함.)
         if (player == null)
         {
@@ -68,11 +75,11 @@ public class MonsterController : MonoBehaviour
         {
             if (player.position.x < transform.position.x)
             {
-                spriteRenderer.flipX = true; // 플레이어가 왼쪽에 있으면 왼쪽 보기
+                spriteRenderer.flipX = false; // 플레이어가 왼쪽에 있으면 왼쪽 보기
             }
             else
             {
-                spriteRenderer.flipX = false; // 플레이어가 오른쪽에 있으면 오른쪽 보기
+                spriteRenderer.flipX = true; // 플레이어가 오른쪽에 있으면 오른쪽 보기
             }
         }
     }
@@ -91,5 +98,65 @@ public class MonsterController : MonoBehaviour
         Vector2 direction = (player.position - transform.position).normalized;
         rigid.linearVelocity = new Vector2(direction.x * moveSpeed, rigid.linearVelocity.y);
         anim.SetBool("isWalking", true);
+    }
+
+    private IEnumerator AttackSequence()
+    {
+        isAttacking = true;
+        lastAttackTime = Time.time;
+
+        // 1. 공격 예고 (붉은 점멸)
+        spriteRenderer.color = Color.red;
+        yield return new WaitForSeconds(telegraphDuration);
+        spriteRenderer.color = originalColor;
+
+        // 2. 공격 애니메이션 실행
+        anim.SetTrigger("Attack");
+
+        // 참고: 실제 공격 판정(대미지 주기)은 애니메이션의 특정 프레임에
+        // Animation Event를 추가하여 PerformSwordAttack() 함수를 호출하는 것이 가장 정확합니다.
+        // 여기서는 애니메이션의 길이를 가정하여 잠시 후 isAttacking 을 false 로 바꿉니다.
+        // 예를 들어 공격 애니메이션이 1초라면 아래 시간도 1초로 설정합니다.
+        yield return new WaitForSeconds(1f);
+
+        isAttacking = false;
+    }
+
+    // Animation Event 로 호출될 함수
+    public void PerformSwordAttack()
+    {
+        // 플레이어가 여전히 칼 휘두르는 범위 내에 있는지 확인 후 대미지 처리
+        if (Vector2.Distance(transform.position, player.position) <= attackRange + 0.5f) // 약간의 추가 범위
+        {
+            Vector2 knockbackDir = (player.position.x < transform.position.x) ? Vector2.left : Vector2.right;
+
+            // PlayerManager 스크립트가 있다고 가정합니다. 실제 사용하는 스크립트 이름으로 바꿔주세요.
+            PlayerManager.Instance.TakeDamage(attackDamage);
+            Debug.Log($"플레이어에게 + {attackDamage} + 대미지를 입혔습니다!");
+        }
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (isDead) return;
+
+        currentHealth -= damage;
+        anim.SetTrigger("Hurt");
+
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        isDead = true;
+        anim.SetTrigger("Die");
+        rigid.linearVelocity = Vector2.zero;
+        GetComponent<Collider2D>().enabled = false; // 다른 오브젝트와 충돌하지 않도록
+
+        // 사망 애니메이션 시간만큼 기다린 후 오브젝트 파괴
+        Destroy(gameObject, 3f); // 3초는 예시, 실제 사망 애니메이션 길이에 맞춰주세요.
     }
 }
