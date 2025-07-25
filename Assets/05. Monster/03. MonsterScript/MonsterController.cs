@@ -12,13 +12,16 @@ public class MonsterController : MonoBehaviour
     [Header("공격 설정")]
     public int contactDamage = 1; // 접촉 시 대미지
     public int attackDamage = 1; // 칼 공격 대미지
-    public float attackRange = 1.5f; // 이 범위 안에 들어오면 공격 시작
+    public float attackRange = 3f; // 이 범위 안에 들어오면 공격 시작
     public float attackCooldown = 2f; // 공격 후 다음 공격까지의 대기 시간
     public float telegraphDuration = 0.5f; // 공격 전 붉게 점등되는 시간
 
     [Header("플레이어 감지")]
     public Transform player; // 플레이어 Transform
     public LayerMask playerLayer; // 플레이어 레이어
+
+    [Header("히트 박스 오브젝트")]
+    public GameObject hitBox; // 히트 박스 오브젝트
 
     // 내부 변수
     private Rigidbody2D rigid;

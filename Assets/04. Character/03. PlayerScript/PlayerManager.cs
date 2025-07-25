@@ -1,36 +1,56 @@
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public class PlayerManager : MonoBehaviour
 {
-    public static PlayerManager Instance;
+    public static PlayerManager Instance { get; private set; }
+    public PlayerController player;
 
-    [Header("플레이어 스테이터스")]
-    public int MaxHP; // 플레이어의 최대 체력
-    public int HP; // 플레이어의 초기 체력
-    public float Damage; // 플레이어의 공격력
+    [Header("플레이어 기본 정보")]
+    public int HP; // 기본 체력
+    public int MaxHP = 3; // 최대 체력
+    public float Damage = 1.0f; // 공격력
 
     private void Awake()
     {
-        if (Instance == null)
+        if (Instance != null && Instance != this)
         {
-            Instance = this;
+            Debug.LogWarning("중복된 PlayerManager가 존재하여 파괴됩니다.");
+            Destroy(gameObject); // 중복된 인스턴스 제거
+            return;
         }
-        else
-        {
-            Destroy(gameObject);
-        }
+
+        Instance = this;
     }
 
-    void Start()
+    private void Start()
     {
-        MaxHP = 3; // 최대 체력 3
-        HP = 3; // 현재 체력 3
-        Damage = 1.0f; // 공격력 1
+        HP = MaxHP;
     }
 
     public void TakeDamage(int attackDamage)
     {
         HP -= attackDamage;
+        Debug.Log($"플레이어 피격! 현재 HP: {HP}");
+
+        if (HP <= 0)
+        {
+            Die();
+        }
+        else
+        {
+            // 넉백 처리도 이곳에서 가능
+            if (player != null)
+            {
+                Vector2 knockDir = (player.transform.position.x < transform.position.x) ? Vector2.left : Vector2.right;
+
+                player.StartKnockback(knockDir);
+            }
+        }
+    }
+
+    void Die()
+    {
+        Debug.Log("플레이어 사망!");
+        // 사망 로직
     }
 }

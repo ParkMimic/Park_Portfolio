@@ -4,7 +4,7 @@ using Unity.VisualScripting;
 using UnityEditor.Rendering;
 using UnityEngine;
 
-public class PlayerController : PlayerManager
+public class PlayerController : MonoBehaviour
 {
     [Header("플레이어 기본 설정")]
     public float moveSpeed = 1f; // 이동 속도
@@ -313,7 +313,6 @@ public class PlayerController : PlayerManager
                 // 바닥 위에 서 있는지 확인
                 if (contact.normal.y > 0.7f)
                 {
-                    Debug.Log("점프 카운트 초기화");
                     jumpCount = 0; // 점프 카운트 초기화
                     isJumping = false; // 점프 중이 아님을 알려줌.
                     isWallSlide = false; // 벽 슬라이딩이 아님을 알려줌.
@@ -332,7 +331,6 @@ public class PlayerController : PlayerManager
                 // 바닥에 붙어 있지 않을 경우, 벽면에 접촉 시 벽 슬라이딩 구현
                 if (!isGrounded && (contact.normal.x > 0.7f || contact.normal.x < -0.7f))
                 {
-                    Debug.Log("벽면 충돌 감지");
                     isWallSlide = true; // WallSlide 중임을 알려줌
                     isDoubleJumping = false; // 더블 점프 상태도 초기화
                     jumpCount = 0; // 벽 슬라이딩 중, 점프 초기화
@@ -356,13 +354,11 @@ public class PlayerController : PlayerManager
     {
         if (collision.gameObject.CompareTag("Wall"))
         {
-            Debug.Log("벽에서 떨어짐");
             isWallSlide = false;
         }
 
         if (collision.gameObject.CompareTag("Ground"))
         {
-            Debug.Log("바닥에서 떨어짐");
             isGrounded = false;
         }
     }
@@ -373,7 +369,7 @@ public class PlayerController : PlayerManager
     {
         if (collision.CompareTag("HitZone") && !isHurt)
         {
-            PlayerManager.Instance.HP -= 1;
+            PlayerManager.Instance.TakeDamage(1);
 
             // 플레이어 넉백 방향 계산
             Vector2 knockDirection = (transform.position.x < collision.transform.position.x)
