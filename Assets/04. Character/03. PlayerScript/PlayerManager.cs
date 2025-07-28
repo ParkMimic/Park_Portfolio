@@ -1,56 +1,42 @@
 using UnityEngine;
+using System.Collections;
 
 public class PlayerManager : MonoBehaviour
 {
+    private PlayerController player; // 플레이어 컨트롤러
     public static PlayerManager Instance { get; private set; }
-    public PlayerController player;
-
-    [Header("플레이어 기본 정보")]
-    public int HP; // 기본 체력
-    public int MaxHP = 3; // 최대 체력
-    public float Damage = 1.0f; // 공격력
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        // Ensure that there is only one instance of PlayerManager
+        if (Instance == null)
         {
-            Debug.LogWarning("중복된 PlayerManager가 존재하여 파괴됩니다.");
-            Destroy(gameObject); // 중복된 인스턴스 제거
-            return;
-        }
-
-        Instance = this;
-    }
-
-    private void Start()
-    {
-        HP = MaxHP;
-    }
-
-    public void TakeDamage(int attackDamage)
-    {
-        HP -= attackDamage;
-        Debug.Log($"플레이어 피격! 현재 HP: {HP}");
-
-        if (HP <= 0)
-        {
-            Die();
+            Instance = this;
         }
         else
         {
-            // 넉백 처리도 이곳에서 가능
-            if (player != null)
-            {
-                Vector2 knockDir = (player.transform.position.x < transform.position.x) ? Vector2.left : Vector2.right;
-
-                player.StartKnockback(knockDir);
-            }
+            Destroy(gameObject); // Destroy duplicate instances
         }
     }
 
-    void Die()
+    [Header("플레이어 스텟")]
+    public int HP;
+    public int MaxHP = 3;
+    public float Damage = 1.0f;
+
+    private void Start()
     {
-        Debug.Log("플레이어 사망!");
-        // 사망 로직
+        player = GetComponent<PlayerController>();
+        // 시작 스텟 초기화
+        HP = MaxHP;
+    }
+
+    public void TakeDamage(int attackDamage, Vector2 attackDir)
+    {
+        if (HP <= 0) return; // 이미 죽었으면 아무 것도 하지 않음.
+        HP -= attackDamage;
+
+        if (player.isHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
+        player.StartKnockback(attackDir); // 플레이어를 넉백 시킴.
     }
 }

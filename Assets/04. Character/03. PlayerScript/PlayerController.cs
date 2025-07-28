@@ -17,7 +17,6 @@ public class PlayerController : MonoBehaviour
     public float dashCooldown = 1f; // 대쉬 쿨타임
     private float dashTime; // 남은 대쉬 시간
     private float dashCooldownTimer = 0f; // 대쉬 쿨타임 타이머
-    private Vector2 lastMoveDirection = Vector2.right; // 마지막 이동 방향 (대쉬에 사용)
     private float originalGravity; // 원래 중력값
 
     [Header("잔상 프리팹")]
@@ -25,6 +24,9 @@ public class PlayerController : MonoBehaviour
     public float ghostDelay = 0.05f; // 잔상 생성 간격
     private float ghostDelayTime; // 잔상 타이머
     public float ghostDelete; // 잔상 삭제 딜레이
+
+    [Header("공격 판정 범위")]
+    public GameObject attackHitboxObject;
 
 
     // 넉백 관련 변수
@@ -53,6 +55,7 @@ public class PlayerController : MonoBehaviour
 
     // 이동 확인 변수
     private float moveInput;
+    private float lastMoveDirection = 1f; // 플레이어가 마지막으로 움직인 방향 (기본값: 오른쪽)
 
     // 공격 관련 변수
     private int attackCount = 3; // 최대 연속 공격 횟수
@@ -91,100 +94,108 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (!isAttacking)
+        if (!isDash)
         {
-            // 입력 감지 스크립트
-            moveInput = Input.GetAxisRaw("Horizontal");
-
-            // 입력 감지
-            if (moveInput != 0)
-            {
-                isWalk = true;
-                if (!isWallSlide)
-                {
-                    if (moveInput == -1)
-                    {
-                        spriteRenderer.flipX = true;
-                    }
-                    else
-                    {
-                        spriteRenderer.flipX = false;
-                    }
-                }
-            }
-            else
-            {
-                isWalk = false;
-            }
-
-            // 점프 관련 로직
-            if (jumpCount < 2)
-            {
-                if (Input.GetKeyDown(KeyCode.Z))
-                {
-                    if (isWallSlide) isWallSlide = false;
-
-                    rigid.linearVelocity = Vector2.zero;
-                    rigid.AddForceY(jumpForce, ForceMode2D.Impulse);
-
-                    // 점프 중임을 확인
-                    isJumping = true;
-                    isGrounded = false; // 점프하는 중에는 땅이 아님
-                    jumpCount++;
-
-                    // 만일 더블 점프 상태라면
-                    if (jumpCount == 2) isDoubleJumping = true; // 더블 점프를 true 로 줌으로서 애니메이션을 감지함.
-                }
-
-                if (Input.GetKeyUp(KeyCode.Z) && rigid.linearVelocityY > 0)
-                {
-                    rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
-                }
-            }
-        }
-
-
-        // 공격 관련 로직
-        // 콤보 리셋 조건: 일정 시간 안 누르면 초기화
-        if (Time.time - lastAttackTime > comboResetTime)
-        {
-            currentAttack = 0;
-            queuedAttackCount = 0;
-        }
-
-
-        // X키 입력 시
-        if (Input.GetKeyDown(KeyCode.X))
-        {
-            if (queuedAttackCount < attackCount)
-            {
-                queuedAttackCount++;
-            }
-
-            lastAttackTime = Time.time;
-
             if (!isAttacking)
             {
-                currentAttack++;
-                isAttacking = true;
+                // 입력 감지 스크립트
+                moveInput = Input.GetAxisRaw("Horizontal");
 
-                // 공격 시작 시점에만 속도 0으로 초기화
-                Vector2 vel = rigid.linearVelocity;
-                vel.x = 0;
-                rigid.linearVelocity = vel;
+                // 입력 감지
+                if (moveInput != 0)
+                {
+                    isWalk = true;
+                    lastMoveDirection = moveInput; // 마지막으로 움직인 방향을 저장
 
-                PlayAttackAnimation(currentAttack);
+                    if (!isWallSlide)
+                    {
+                        if (moveInput == -1)
+                        {
+                            //spriteRenderer.flipX = true;
+                            transform.localScale = new Vector3(-1, 1, 1); // 왼쪽으로 이동 시 스프라이트 뒤집기
+                        }
+                        else
+                        {
+                            //spriteRenderer.flipX = false;
+                            transform.localScale = new Vector3(1, 1, 1); // 오른쪽으로 이동 시 스프라이트 뒤집기
+                        }
+                    }
+                }
+                else
+                {
+                    isWalk = false;
+                }
+
+                // 점프 관련 로직
+                if (jumpCount < 2)
+                {
+                    if (Input.GetKeyDown(KeyCode.Z))
+                    {
+                        if (isWallSlide) isWallSlide = false;
+
+                        rigid.linearVelocity = Vector2.zero;
+                        rigid.AddForceY(jumpForce, ForceMode2D.Impulse);
+
+                        // 점프 중임을 확인
+                        isJumping = true;
+                        isGrounded = false; // 점프하는 중에는 땅이 아님
+                        jumpCount++;
+
+                        // 만일 더블 점프 상태라면
+                        if (jumpCount == 2) isDoubleJumping = true; // 더블 점프를 true 로 줌으로서 애니메이션을 감지함.
+                    }
+
+                    if (Input.GetKeyUp(KeyCode.Z) && rigid.linearVelocityY > 0)
+                    {
+                        rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
+                    }
+                }
+            }
+
+
+            // 공격 관련 로직
+            // 콤보 리셋 조건: 일정 시간 안 누르면 초기화
+            if (Time.time - lastAttackTime > comboResetTime)
+            {
+                currentAttack = 0;
+                queuedAttackCount = 0;
+            }
+
+
+            // X키 입력 시
+            if (Input.GetKeyDown(KeyCode.X))
+            {
+                if (queuedAttackCount < attackCount)
+                {
+                    queuedAttackCount++;
+                }
+
+                lastAttackTime = Time.time;
+
+                if (!isAttacking)
+                {
+                    currentAttack++;
+                    isAttacking = true;
+
+                    // 공격 시작 시점에만 속도 0으로 초기화
+                    Vector2 vel = rigid.linearVelocity;
+                    vel.x = 0;
+                    rigid.linearVelocity = vel;
+
+                    PlayAttackAnimation(currentAttack);
+                }
             }
         }
 
+        // --------- 대쉬 로직 ----------
 
-        // 대쉬 로직
+
         if (dashCooldownTimer > 0)
         {
             dashCooldownTimer -= Time.deltaTime;
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0 && !isDash)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0 && !isDash && !isWallSlide)
         {
             StartDash();
         }
@@ -192,7 +203,6 @@ public class PlayerController : MonoBehaviour
         if (isDash)
         {
             UpdateDash();
-            return; // 대쉬 중에는 다른 모든 Update 로직을 건너뜀.
         }
 
 
@@ -260,7 +270,7 @@ public class PlayerController : MonoBehaviour
         dashTime = dashDuration;
         rigid.gravityScale = 0;
 
-        float dashDirectionX = (moveInput != 0) ? moveInput : (spriteRenderer.flipX ? -1 : 1);
+        float dashDirectionX = (moveInput != 0) ? moveInput : lastMoveDirection;
         rigid.linearVelocity = new Vector2(dashDirectionX * dashSpeed, 0f);
 
         dashCooldownTimer = dashCooldown;
@@ -297,7 +307,7 @@ public class PlayerController : MonoBehaviour
             SpriteRenderer ghostSprite = currentGhost.GetComponent<SpriteRenderer>();
 
             ghostSprite.sprite = spriteRenderer.sprite;
-            ghostSprite.flipX = spriteRenderer.flipX;
+            ghostSprite.flipX = transform.localScale.x < 0; // 스프라이트 방향 맞추기
 
             Destroy(currentGhost, ghostDelete);
             ghostDelayTime = ghostDelay;
@@ -369,12 +379,13 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.CompareTag("HitZone") && !isHurt)
         {
-            PlayerManager.Instance.TakeDamage(1);
 
             // 플레이어 넉백 방향 계산
             Vector2 knockDirection = (transform.position.x < collision.transform.position.x)
                 ? Vector2.left
                 : Vector2.right;
+
+            PlayerManager.Instance.TakeDamage(1, knockDirection);
 
             StartKnockback(knockDirection);
         }
@@ -388,6 +399,8 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Knockback(Vector2 direction)
     {
+        Debug.Log("플레이어가 넉백 당했습니다!");
+
         // 체력이 0 이하면 아무 것도 하지 않고 종료
         if (PlayerManager.Instance.HP <= 0) yield break;
 
@@ -434,6 +447,24 @@ public class PlayerController : MonoBehaviour
             // 콤보 종료 (입력된 것 이상 실행하지 않음)
             queuedAttackCount = 0;
             currentAttack = 0;
+        }
+    }
+
+    public void ActivateAttackHitbox()
+    {
+        if (attackHitboxObject != null)
+        {
+            attackHitboxObject.SetActive(true);
+            Debug.Log("공격 판정 활성화!"); // 디버깅을 위해 추가
+        }
+    }
+
+    public void DeactivateAttackHitbox()
+    {
+        if (attackHitboxObject != null)
+        {
+            attackHitboxObject.SetActive(false);
+            Debug.Log("공격 판정 비활성화!"); // 디버깅을 위해 추가
         }
     }
 

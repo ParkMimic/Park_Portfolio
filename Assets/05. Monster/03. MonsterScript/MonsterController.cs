@@ -6,8 +6,8 @@ public class MonsterController : MonoBehaviour
 {
     [Header("기본 설정")]
     public float moveSpeed = 2f;
-    public int maxHealth = 3;
-    private int currentHealth;
+    public float maxHealth = 3;
+    private float currentHealth;
 
     [Header("공격 설정")]
     public int contactDamage = 1; // 접촉 시 대미지
@@ -20,8 +20,10 @@ public class MonsterController : MonoBehaviour
     public Transform player; // 플레이어 Transform
     public LayerMask playerLayer; // 플레이어 레이어
 
-    [Header("히트 박스 오브젝트")]
-    public GameObject hitBox; // 히트 박스 오브젝트
+    [Header("시야 설정")]
+    public float visionRange = 10f; // 플레이어를 감지할 수 있는 최대 거리
+    public float loseSightDistance = 15f; // 플레이어가 이 거리 이상 멀어지면 시야를 잃음
+    private bool hasSpottedPlayer = false; // 플레이어를 감지했는지 여부
 
     // 내부 변수
     private Rigidbody2D rigid;
@@ -32,6 +34,7 @@ public class MonsterController : MonoBehaviour
     private bool isAttacking = false;
     private bool isDead = false;
     private float lastAttackTime;
+    private bool isHurt = false; // 몬스터가 아픈 상태인지 여부
 
     private void Start()
     {
@@ -62,27 +65,42 @@ public class MonsterController : MonoBehaviour
 
     private void Update()
     {
-        if (isDead || player == null) return;
+        if (isDead || player == null || PlayerManager.Instance.HP <= 0) return;
 
-        // 플레이어와의 거리 계산
-        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
-
-        // 공격 쿨타임이 지났고, 플레이어가 공격 범위 안에 있으며 현재 공격 중이 아니라면
-        if (Time.time > lastAttackTime + attackCooldown && distanceToPlayer <= attackRange && !isAttacking)
+        // 플레이어를 발견하지 못했다면, 시야 내에 있는지 확인
+        if (!hasSpottedPlayer)
         {
-            StartCoroutine(AttackSequence());
+            CheckForPlayerInSight();
         }
-
-        // 플레이어를 향해 바라보도록 스프라이트 뒤집기 (공격 중이 아닐 때만)
-        if (!isAttacking)
+        else // 플레이어를 발견했다면
         {
-            if (player.position.x < transform.position.x)
+            // 플레이어와의 거리 계산
+            float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+
+            // 만약 거리가 '놓치는 거리'보다 멀어졌다면
+            if (distanceToPlayer > loseSightDistance)
             {
-                spriteRenderer.flipX = false; // 플레이어가 왼쪽에 있으면 왼쪽 보기
+                hasSpottedPlayer = false; // 플레이어를 놓쳤다고 판단.
+                return; // 추적 및 공격 로직을 더 이상 진행하지 않음.
             }
-            else
+
+            // 공격 쿨타임이 지났고, 플레이어가 공격 범위 안에 있으며 현재 공격 중이 아니라면
+            if (Time.time >= lastAttackTime + attackCooldown && distanceToPlayer <= attackRange && !isAttacking)
             {
-                spriteRenderer.flipX = true; // 플레이어가 오른쪽에 있으면 오른쪽 보기
+                StartCoroutine(AttackSequence());
+            }
+
+            // 플레이어를 향해 바라보도록 스프라이트 뒤집기 (공격 중이 아닐 때만)
+            if (!isAttacking)
+            {
+                if (player.position.x < transform.position.x)
+                {
+                    transform.localScale = new Vector3(1, 1, 1); // 플레이어가 왼쪽에 있으면 왼쪽 보기
+                }
+                else
+                {
+                    transform.localScale = new Vector3(-1, 1, 1); // 플레이어가 오른쪽에 있으면 오른쪽 보기
+                }
             }
         }
     }
@@ -90,7 +108,7 @@ public class MonsterController : MonoBehaviour
     private void FixedUpdate()
     {
         // 죽었거나, 공격 중이거나, 플레이어가 공격 범위 안에 있으면 움직이지 않음
-        if (isDead || isAttacking || Vector2.Distance(transform.position, player.position) <= attackRange)
+        if (isDead || isAttacking || !hasSpottedPlayer || Vector2.Distance(transform.position, player.position) <= attackRange)
         {
             rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
             anim.SetBool("isWalking", false);
@@ -101,6 +119,7 @@ public class MonsterController : MonoBehaviour
         Vector2 direction = (player.position - transform.position).normalized;
         rigid.linearVelocity = new Vector2(direction.x * moveSpeed, rigid.linearVelocity.y);
         anim.SetBool("isWalking", true);
+
     }
 
     private IEnumerator AttackSequence()
@@ -115,6 +134,9 @@ public class MonsterController : MonoBehaviour
 
         // 2. 공격 애니메이션 실행
         anim.SetTrigger("Attack");
+
+        yield return new WaitForSeconds(0.35f); // 애니메이션이 시작되고 약간의 시간 대기
+        PerformSwordAttack();
 
         // 참고: 실제 공격 판정(대미지 주기)은 애니메이션의 특정 프레임에
         // Animation Event를 추가하여 PerformSwordAttack() 함수를 호출하는 것이 가장 정확합니다.
@@ -134,17 +156,18 @@ public class MonsterController : MonoBehaviour
             Vector2 knockbackDir = (player.position.x < transform.position.x) ? Vector2.left : Vector2.right;
 
             // PlayerManager 스크립트가 있다고 가정합니다. 실제 사용하는 스크립트 이름으로 바꿔주세요.
-            PlayerManager.Instance.TakeDamage(attackDamage);
+            PlayerManager.Instance.TakeDamage(attackDamage, knockbackDir);
             Debug.Log($"플레이어에게 + {attackDamage} + 대미지를 입혔습니다!");
         }
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(float damage)
     {
         if (isDead) return;
 
         currentHealth -= damage;
-        anim.SetTrigger("Hurt");
+        isHurt = true; // 몬스터 피격 상태로 설정
+        anim.SetTrigger("isHurt");
 
         if (currentHealth <= 0)
         {
@@ -161,5 +184,22 @@ public class MonsterController : MonoBehaviour
 
         // 사망 애니메이션 시간만큼 기다린 후 오브젝트 파괴
         Destroy(gameObject, 3f); // 3초는 예시, 실제 사망 애니메이션 길이에 맞춰주세요.
+    }
+
+    void CheckForPlayerInSight()
+    {
+        Vector2 direction = transform.localScale.x > 0 ? Vector2.left : Vector2.right;
+
+        Vector2 raycastOrigin = (Vector2)transform.position + new Vector2(0, 1f); // 몬스터 시야각 조정
+
+        RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, direction, visionRange, playerLayer);
+
+        Debug.DrawRay(raycastOrigin, direction * visionRange, Color.red);
+
+        if (hit.collider != null && hit.collider.CompareTag("Player"))
+        {
+            hasSpottedPlayer = true;
+            Debug.Log("플레이어 발견!");
+        }
     }
 }
