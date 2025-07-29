@@ -14,6 +14,8 @@ public class MonsterController : MonoBehaviour
     public int attackDamage = 1; // 칼 공격 데미지
     public float attackRange = 3f; // 이 거리 안에 들어오면 공격 시작
     public float attackCooldown = 2f; // 한 번 공격 후 다음 공격까지의 최소 시간
+    public float pauseBeforeAttackTime = 0.2f; // 공격 애니메이션 시작 후 멈출 때까지의 시간
+    public float attackDelay = 0.4f; // 공격 직전 멈추는 시간
 
     [Header("패링 설정")]
     public float parryFlashDuration = 0.1f; // 패링 가능 타이밍에 반짝이는 시간
@@ -49,10 +51,8 @@ public class MonsterController : MonoBehaviour
         anim = GetComponent<Animator>();
 
         lastAttackTime = 0; // 마지막 공격 시간을 초기화
-
         currentHealth = maxHealth; // 시작 시 현재 체력을 최대 체력으로 초기화
-
-        originalColor = spriteRenderer.color;
+        originalColor = spriteRenderer.color; // 기본 색 저장
 
         // player 변수 할당 및 플레이어를 자동으로 찾기 (태그가 "Player"로 설정되어 있어야 함)
         if (player == null)
@@ -97,7 +97,7 @@ public class MonsterController : MonoBehaviour
                 // AttackSequence 코루틴을 직접 호출하는 대신, 애니메이션 트리거를 사용합니다.
                 isAttacking = true;
                 lastAttackTime = Time.time;
-                anim.SetTrigger("Attack");
+                StartCoroutine(FullAttackSequence());
             }
 
             // 플레이어를 향해 바라보도록 스프라이트 뒤집기 (공격 중이 아닐 때만)
@@ -142,6 +142,22 @@ public class MonsterController : MonoBehaviour
         spriteRenderer.color = Color.red;
         yield return new WaitForSeconds(parryFlashDuration);
         spriteRenderer.color = originalColor;
+    }
+
+    private IEnumerator FullAttackSequence()
+    {
+        anim.SetTrigger("Attack");
+        yield return new WaitForSeconds(pauseBeforeAttackTime);
+
+        try
+        {
+            anim.speed = 0; // 애니메이션 멈춤
+            yield return new WaitForSeconds(attackDelay);
+        }
+        finally
+        {
+            anim.speed = 1; // 어떤 상황에서든 애니메이션 속도 복구
+        }
     }
 
     public void FinishAttack()
