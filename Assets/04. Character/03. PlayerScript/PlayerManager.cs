@@ -8,7 +8,6 @@ public class PlayerManager : MonoBehaviour
 
     private void Awake()
     {
-        // Ensure that there is only one instance of PlayerManager
         if (Instance == null)
         {
             Instance = this;
@@ -36,7 +35,7 @@ public class PlayerManager : MonoBehaviour
         if (HP <= 0) return; // 이미 죽었으면 아무 것도 하지 않음.
         HP -= attackDamage;
 
-        if (player.isHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
+        if (player.IsHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
         player.StartKnockback(attackDir); // 플레이어를 넉백 시킴.
     }
 }

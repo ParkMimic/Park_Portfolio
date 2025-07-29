@@ -1,441 +1,274 @@
-using NUnit.Framework;
 using System.Collections;
-using Unity.VisualScripting;
-using UnityEditor.Rendering;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    #region 변수 선언 (Fields & Properties)
+
+    // -- SerializeField는 인스펙터에서 값을 조정할 수 있게 해줍니다. --
     [Header("플레이어 기본 설정")]
-    public float moveSpeed = 1f; // 이동 속도
-    public float jumpForce = 1f; // 점프 힘
-    public float wallSlideSpeed = 1f; // 벽 슬라이딩 속도
+    [SerializeField] private float moveSpeed = 1f;
+    [SerializeField] private float jumpForce = 1f;
+    [SerializeField] private float wallSlideSpeed = 1f;
 
     [Header("대쉬 설정")]
-    public float dashSpeed = 10f; // 대쉬 속도
-    public float dashDuration = 0.2f; // 대쉬 지속 시간
-    public float dashCooldown = 1f; // 대쉬 쿨타임
-    private float dashTime; // 남은 대쉬 시간
-    private float dashCooldownTimer = 0f; // 대쉬 쿨타임 타이머
-    private float originalGravity; // 원래 중력값
+    [SerializeField] private float dashSpeed = 10f;
+    [SerializeField] private float dashDuration = 0.2f;
+    [SerializeField] private float dashCooldown = 1f;
 
-    [Header("잔상 프리팹")]
-    public GameObject ghostPrefab;
-    public float ghostDelay = 0.05f; // 잔상 생성 간격
-    private float ghostDelayTime; // 잔상 타이머
-    public float ghostDelete; // 잔상 삭제 딜레이
+    [Header("공격 설정")]
+    [SerializeField] private GameObject attackHitboxObject;
+    [SerializeField] private int attackCount = 3;
+    [SerializeField] private float comboResetTime = 1.0f;
 
-    [Header("공격 판정 범위")]
-    public GameObject attackHitboxObject;
+    [Header("잔상 효과 설정")]
+    [SerializeField] private GameObject ghostPrefab;
+    [SerializeField] private float ghostDelay = 0.05f;
+    [SerializeField] private float ghostDelete;
 
+    [Header("피격 설정")]
+    [SerializeField] private float hurtForce = 3f;
+    [SerializeField] private float hurtDuration = 0.5f;
 
-    // 넉백 관련 변수
-    private float hurtForce = 3f; // 넉백 힘
-    private float hurtDuration = 0.5f; // 경직 시간
+    // -- 컴포넌트 변수 --
+    private Rigidbody2D rigid;
+    private Animator anim;
 
-    // 점프 횟수 카운트
-    private int jumpCount;
-
-    // 현재 상태 확인
-    private bool isJumping = false;
-    private bool isWallSlide = false;
-    private bool isWalk = false;
-    private bool isDoubleJumping = false;
-    private bool isFalling = false;
+    // -- 상태(State) 변수 --
+    public bool IsHurt { get; private set; }
     private bool isGrounded;
-    private bool isGameOver = false;
-    private bool _isHurt = false;
-    public bool isHurt
-    {
-        get { return _isHurt; }
-        set { _isHurt = value; }
-    }
+    private bool isJumping;
+    private bool isDoubleJumping;
+    private bool isFalling;
+    private bool isDashing;
+    private bool isWallSliding;
+    private bool isAttacking;
+    private bool isGameOver;
 
-    private bool isDash = false;
-
-    // 이동 확인 변수
+    // -- 내부 로직 변수 --
     private float moveInput;
-    private float lastMoveDirection = 1f; // 플레이어가 마지막으로 움직인 방향 (기본값: 오른쪽)
+    private float lastMoveDirection = 1f;
+    private int jumpCount;
+    private float originalGravity;
 
-    // 공격 관련 변수
-    private int attackCount = 3; // 최대 연속 공격 횟수
-    private int currentAttack = 0; // 현재 연속 공격 단계 (0~3)
-    private float lastAttackTime = 0f; // 마지막 공격 시각
-    [SerializeField] private float comboResetTime = 1.0f; // 콤보 리셋 시간 (초)
+    // -- 타이머 및 카운터 변수 --
+    private float dashTime;
+    private float dashCooldownTimer;
+    private float ghostDelayTime;
+    private float lastAttackTime;
+    private int currentAttack;
+    private int queuedAttackCount;
 
-    private bool isAttacking = false; // 공격 중 상태 확인
-    private int queuedAttackCount = 0; // 사용자가 누른 X의 총 횟수
+    #endregion
 
+    #region 기본 함수
 
-    Rigidbody2D rigid;
-    SpriteRenderer spriteRenderer;
-    Animator anim;
-
-    void Start()
+    private void Awake()
     {
-        // 컴포넌트 선언
         rigid = GetComponent<Rigidbody2D>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
-
-        // 게임을 시작 후 설정 초기화
-        jumpCount = 0; // 점프 횟수 초기화
-        originalGravity = rigid.gravityScale; // 중력 초깃값 저장
-
     }
 
-    void Update()
+    private void Start()
     {
-        if (isGameOver || isHurt)
+        originalGravity = rigid.gravityScale;
+    }
+
+    private void Update()
+    {
+        if (isGameOver || IsHurt)
         {
-            isAttacking = false;
-            queuedAttackCount = 0;
-            currentAttack = 0;
+            if (IsHurt) ResetAttackState();
             return;
         }
 
-        if (!isDash)
+        HandleTimers();
+        HandleInput();
+        UpdateAnimator();
+
+        if (PlayerManager.Instance.HP <= 0 && !isGameOver)
         {
-            if (!isAttacking)
-            {
-                // 입력 감지 스크립트
-                moveInput = Input.GetAxisRaw("Horizontal");
-
-                // 입력 감지
-                if (moveInput != 0)
-                {
-                    isWalk = true;
-                    lastMoveDirection = moveInput; // 마지막으로 움직인 방향을 저장
-
-                    if (!isWallSlide)
-                    {
-                        if (moveInput == -1)
-                        {
-                            //spriteRenderer.flipX = true;
-                            transform.localScale = new Vector3(-1, 1, 1); // 왼쪽으로 이동 시 스프라이트 뒤집기
-                        }
-                        else
-                        {
-                            //spriteRenderer.flipX = false;
-                            transform.localScale = new Vector3(1, 1, 1); // 오른쪽으로 이동 시 스프라이트 뒤집기
-                        }
-                    }
-                }
-                else
-                {
-                    isWalk = false;
-                }
-
-                // 점프 관련 로직
-                if (jumpCount < 2)
-                {
-                    if (Input.GetKeyDown(KeyCode.Z))
-                    {
-                        if (isWallSlide) isWallSlide = false;
-
-                        rigid.linearVelocity = Vector2.zero;
-                        rigid.AddForceY(jumpForce, ForceMode2D.Impulse);
-
-                        // 점프 중임을 확인
-                        isJumping = true;
-                        isGrounded = false; // 점프하는 중에는 땅이 아님
-                        jumpCount++;
-
-                        // 만일 더블 점프 상태라면
-                        if (jumpCount == 2) isDoubleJumping = true; // 더블 점프를 true 로 줌으로서 애니메이션을 감지함.
-                    }
-
-                    if (Input.GetKeyUp(KeyCode.Z) && rigid.linearVelocityY > 0)
-                    {
-                        rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
-                    }
-                }
-            }
-
-
-            // 공격 관련 로직
-            // 콤보 리셋 조건: 일정 시간 안 누르면 초기화
-            if (Time.time - lastAttackTime > comboResetTime)
-            {
-                currentAttack = 0;
-                queuedAttackCount = 0;
-            }
-
-
-            // X키 입력 시
-            if (Input.GetKeyDown(KeyCode.X))
-            {
-                if (queuedAttackCount < attackCount)
-                {
-                    queuedAttackCount++;
-                }
-
-                lastAttackTime = Time.time;
-
-                if (!isAttacking)
-                {
-                    currentAttack++;
-                    isAttacking = true;
-
-                    // 공격 시작 시점에만 속도 0으로 초기화
-                    Vector2 vel = rigid.linearVelocity;
-                    vel.x = 0;
-                    rigid.linearVelocity = vel;
-
-                    PlayAttackAnimation(currentAttack);
-                }
-            }
+            TriggerGameOver();
         }
+    }
 
-        // --------- 대쉬 로직 ----------
+    private void FixedUpdate()
+    {
+        if (isGameOver || IsHurt || isDashing) return;
+        HandleMovement();
+    }
 
+    #endregion
 
-        if (dashCooldownTimer > 0)
-        {
-            dashCooldownTimer -= Time.deltaTime;
-        }
+    #region 입력 및 상태 업데이트
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0 && !isDash && !isWallSlide)
+    private void HandleInput()
+    {
+        moveInput = Input.GetAxisRaw("Horizontal");
+
+        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0 && !isDashing && !isWallSliding)
         {
             StartDash();
         }
 
-        if (isDash)
+        if (isDashing)
         {
             UpdateDash();
-        }
-
-
-        // 플레이어의 체력 감지
-        if (PlayerManager.Instance.HP <= 0 && !isGameOver)
-        {
-            GameOver();
-        }
-
-
-        // 애니메이션 파라미터 설정
-        anim.SetBool("isWalk", isWalk);
-        anim.SetBool("isJump", isJumping);
-        anim.SetBool("isDoubleJump", isDoubleJumping);
-        anim.SetBool("isFalling", isFalling);
-        anim.SetBool("isWallSlide", isWallSlide);
-    }
-
-
-    private void FixedUpdate()
-    {
-        // 특정 상태에서는 물리 처리를 중단
-        if (isGameOver || isHurt || isDash) return;
-
-
-        if (isAttacking)
-        {
-            if (isGrounded)
-            {
-                // 땅에 있을 때만 속도를 0으로 만들기
-                rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
-            }
-            else
-            {
-                // 공중에선 x 속도를 유지하거나 입력 받아서 자연스럽게 이동
-                rigid.linearVelocity = new Vector2(moveInput * moveSpeed, rigid.linearVelocity.y);
-            }
             return;
         }
 
-        if (isWallSlide)
+        if (Input.GetKeyDown(KeyCode.X) && !isWallSliding)
         {
-            // 벽 슬라이딩 중일 땐 수평 이동을 막고, 낙하 속도만 제한
+            HandleAttackInput();
+        }
+
+        if (!isAttacking)
+        {
+            HandleJumpInput();
+        }
+    }
+
+    private void HandleTimers()
+    {
+        if (dashCooldownTimer > 0) dashCooldownTimer -= Time.deltaTime;
+        if (Time.time - lastAttackTime > comboResetTime) ResetAttackState();
+    }
+
+    private void UpdateAnimator()
+    {
+        anim.SetBool("isWalk", moveInput != 0 && isGrounded);
+        anim.SetBool("isJump", isJumping);
+        anim.SetBool("isDoubleJump", isDoubleJumping);
+        anim.SetBool("isFalling", isFalling);
+        anim.SetBool("isWallSlide", isWallSliding);
+    }
+
+    #endregion
+
+    #region 이동 및 물리 (Movement & Physics)
+
+    private void HandleMovement()
+    {
+        if (isAttacking)
+        {
+            if (isGrounded) rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
+        }
+        else if (isWallSliding)
+        {
             rigid.linearVelocity = new Vector2(0, Mathf.Max(rigid.linearVelocity.y, -wallSlideSpeed));
         }
         else
         {
-            // 평소 이동 처리
             rigid.linearVelocity = new Vector2(moveInput * moveSpeed, rigid.linearVelocity.y);
+            if (moveInput != 0) transform.localScale = new Vector3(moveInput, 1, 1);
         }
-
 
         isFalling = !isGrounded && rigid.linearVelocity.y < 0;
     }
 
-    void StartDash()
+    private void HandleJumpInput()
     {
-        isDash = true;
+        if (jumpCount < 2 && Input.GetKeyDown(KeyCode.Z))
+        {
+            if (isWallSliding) isWallSliding = false;
+            isGrounded = false;
+            isJumping = true;
+            jumpCount++;
+            if (jumpCount == 2) isDoubleJumping = true;
+
+            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, 0);
+            rigid.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+        }
+
+        if (Input.GetKeyUp(KeyCode.Z) && rigid.linearVelocity.y > 0)
+        {
+            rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, rigid.linearVelocity.y * 0.5f);
+        }
+    }
+
+    #endregion
+
+    #region 대쉬 (Dash)
+
+    private void StartDash()
+    {
+        isDashing = true;
         anim.SetBool("isDash", true);
-        isAttacking = false; // 공격 중이었다면 캔슬
-        isWallSlide = false; // 벽 슬라이딩 중이었다면 캔슬
-        currentAttack = 0;
-        queuedAttackCount = 0;
+        ResetAttackState();
+        isWallSliding = false;
 
         dashTime = dashDuration;
         rigid.gravityScale = 0;
 
         float dashDirectionX = (moveInput != 0) ? moveInput : lastMoveDirection;
-        rigid.linearVelocity = new Vector2(dashDirectionX * dashSpeed, 0f);
+        transform.localScale = new Vector3(dashDirectionX, 1, 1);
+        lastMoveDirection = dashDirectionX;
 
+        rigid.linearVelocity = new Vector2(dashDirectionX * dashSpeed, 0f);
         dashCooldownTimer = dashCooldown;
-        ghostDelayTime = ghostDelay; // 첫 잔상은 바로 생성
+        ghostDelayTime = ghostDelay;
     }
 
-    void UpdateDash()
+    private void UpdateDash()
     {
+        DeactivateAttackHitbox();
         dashTime -= Time.deltaTime;
         MakeGhost();
-
-        if (dashTime <= 0)
-        {
-            EndDash();
-        }
+        if (dashTime <= 0) EndDash();
     }
 
-    void EndDash()
+    private void EndDash()
     {
-        isDash = false;
+        isDashing = false;
         anim.SetBool("isDash", false);
         rigid.gravityScale = originalGravity;
-        rigid.linearVelocity = new Vector2(0, rigid.linearVelocityY);
+        rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
     }
 
-    void MakeGhost()
+    private void MakeGhost()
     {
         if (ghostPrefab == null) return;
-
         ghostDelayTime -= Time.deltaTime;
         if (ghostDelayTime <= 0)
         {
             GameObject currentGhost = Instantiate(ghostPrefab, transform.position, transform.rotation);
-            SpriteRenderer ghostSprite = currentGhost.GetComponent<SpriteRenderer>();
-
-            ghostSprite.sprite = spriteRenderer.sprite;
-            ghostSprite.flipX = transform.localScale.x < 0; // 스프라이트 방향 맞추기
-
+            if (currentGhost.TryGetComponent<SpriteRenderer>(out var ghostSprite))
+            {
+                ghostSprite.sprite = GetComponent<SpriteRenderer>().sprite;
+                ghostSprite.flipX = transform.localScale.x < 0;
+            }
             Destroy(currentGhost, ghostDelete);
             ghostDelayTime = ghostDelay;
         }
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    #endregion
+
+    #region 공격 (Attack)
+
+    private void HandleAttackInput()
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (queuedAttackCount < attackCount) queuedAttackCount++;
+        lastAttackTime = Time.time;
+        if (!isAttacking)
         {
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                // 바닥 위에 서 있는지 확인
-                if (contact.normal.y > 0.7f)
-                {
-                    jumpCount = 0; // 점프 카운트 초기화
-                    isJumping = false; // 점프 중이 아님을 알려줌.
-                    isWallSlide = false; // 벽 슬라이딩이 아님을 알려줌.
-                    isDoubleJumping = false; // 더블 점프 상태도 아님을 알려줌.
-                    isFalling = false; // 떨어지는 중이 아님
-                    isGrounded = true; // 바닥에 서 있음을 확인
-                    break;
-                }
-            }
-        }
-
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                // 바닥에 붙어 있지 않을 경우, 벽면에 접촉 시 벽 슬라이딩 구현
-                if (!isGrounded && (contact.normal.x > 0.7f || contact.normal.x < -0.7f))
-                {
-                    isWallSlide = true; // WallSlide 중임을 알려줌
-                    isDoubleJumping = false; // 더블 점프 상태도 초기화
-                    jumpCount = 0; // 벽 슬라이딩 중, 점프 초기화
-
-                    // 공격 상태 초기화
-                    isAttacking = false; // 공격 바로 종료
-                    currentAttack = 0;
-                    queuedAttackCount = 0;
-
-                    // 모든 공격 애니메이션 트리거를 리셋하여 현재 애니메이션을 강제로 중단
-                    anim.ResetTrigger("Attack1");
-                    anim.ResetTrigger("Attack2");
-                    anim.ResetTrigger("Attack3");
-                    break;
-                }
-            }
+            currentAttack++;
+            isAttacking = true;
+            PlayAttackAnimation(currentAttack);
         }
     }
 
-    private void OnCollisionExit2D(Collision2D collision)
+    private void PlayAttackAnimation(int attackIndex)
     {
-        if (collision.gameObject.CompareTag("Wall"))
-        {
-            isWallSlide = false;
-        }
-
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = false;
-        }
+        anim.SetTrigger("Attack" + attackIndex);
     }
 
+    public void EndAttack() => StartCoroutine(EndAttackDelay());
 
-    // 함정 감지
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.CompareTag("HitZone") && !isHurt)
-        {
-
-            // 플레이어 넉백 방향 계산
-            Vector2 knockDirection = (transform.position.x < collision.transform.position.x)
-                ? Vector2.left
-                : Vector2.right;
-
-            PlayerManager.Instance.TakeDamage(1, knockDirection);
-
-            StartKnockback(knockDirection);
-        }
-    }
-
-    public void StartKnockback(Vector2 knockDirection)
-    {
-        StartCoroutine(Knockback(knockDirection));
-    }
-
-
-    private IEnumerator Knockback(Vector2 direction)
-    {
-        Debug.Log("플레이어가 넉백 당했습니다!");
-
-        // 체력이 0 이하면 아무 것도 하지 않고 종료
-        if (PlayerManager.Instance.HP <= 0) yield break;
-
-        isHurt = true;
-
-        anim.ResetTrigger("isHurt"); // 중복 방지
-        anim.SetTrigger("isHurt");
-
-        // 넉백 적용
-        rigid.linearVelocity = Vector2.zero;
-        rigid.AddForce(direction * hurtForce, ForceMode2D.Impulse);
-
-        yield return new WaitForSeconds(hurtDuration);
-
-        isHurt = false;
-    }
-
-    // 공격 애니메이션 실행 함수
-    void PlayAttackAnimation(int attackIndex)
-    {
-        anim.SetTrigger("Attack" + attackIndex); // 예: Attack1, Attack2, Attack3
-    }
-
-    // 공격 종료
-    public void EndAttack()
-    {
-        StartCoroutine(EndAttackDelay());
-    }
-
-    // 공격 종료까지 딜레이 (동작의 자연스러움을 위함)
     private IEnumerator EndAttackDelay()
     {
-        yield return new WaitForSeconds(0.06f); // 0.05 초의 여유를 주고 처리함
+        yield return new WaitForSeconds(0.06f);
         isAttacking = false;
-
         if (currentAttack < queuedAttackCount && currentAttack < attackCount)
         {
             currentAttack++;
@@ -444,35 +277,113 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // 콤보 종료 (입력된 것 이상 실행하지 않음)
-            queuedAttackCount = 0;
-            currentAttack = 0;
+            ResetAttackState();
+        }
+    }
+
+    private void ResetAttackState()
+    {
+        isAttacking = false;
+        queuedAttackCount = 0;
+        currentAttack = 0;
+        DeactivateAttackHitbox();
+        if (anim != null)
+        {
+            anim.ResetTrigger("Attack1");
+            anim.ResetTrigger("Attack2");
+            anim.ResetTrigger("Attack3");
         }
     }
 
     public void ActivateAttackHitbox()
     {
-        if (attackHitboxObject != null)
-        {
-            attackHitboxObject.SetActive(true);
-            Debug.Log("공격 판정 활성화!"); // 디버깅을 위해 추가
-        }
+        if (isDashing) return;
+        if (attackHitboxObject != null) attackHitboxObject.SetActive(true);
     }
 
     public void DeactivateAttackHitbox()
     {
-        if (attackHitboxObject != null)
+        if (attackHitboxObject != null) attackHitboxObject.SetActive(false);
+    }
+
+    #endregion
+
+    #region 충돌 및 상태 관리 (Collisions & State)
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
         {
-            attackHitboxObject.SetActive(false);
-            Debug.Log("공격 판정 비활성화!"); // 디버깅을 위해 추가
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (contact.normal.y > 0.7f)
+                {
+                    isGrounded = true;
+                    isJumping = false;
+                    isDoubleJumping = false;
+                    isFalling = false;
+                    isWallSliding = false;
+                    jumpCount = 0;
+                    break;
+                }
+            }
+        }
+        else if (collision.gameObject.CompareTag("Wall"))
+        {
+            foreach (ContactPoint2D contact in collision.contacts)
+            {
+                if (!isGrounded && Mathf.Abs(contact.normal.x) > 0.7f)
+                {
+                    isWallSliding = true;
+                    isDoubleJumping = false;
+                    jumpCount = 0;
+                    ResetAttackState();
+                    break;
+                }
+            }
         }
     }
 
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Ground")) isGrounded = false;
+        if (collision.gameObject.CompareTag("Wall")) isWallSliding = false;
+    }
 
-    void GameOver()
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("HitZone") && !IsHurt)
+        {
+            Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
+            PlayerManager.Instance.TakeDamage(1, knockDirection);
+            StartKnockback(knockDirection);
+        }
+    }
+
+    public void StartKnockback(Vector2 direction)
+    {
+        if (IsHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
+        StartCoroutine(Knockback(direction));
+    }
+
+    private IEnumerator Knockback(Vector2 direction)
+    {
+        if (PlayerManager.Instance.HP <= 0) yield break;
+        IsHurt = true;
+        anim.SetTrigger("isHurt");
+        rigid.linearVelocity = Vector2.zero;
+        rigid.AddForce(direction * hurtForce, ForceMode2D.Impulse);
+        yield return new WaitForSeconds(hurtDuration);
+        IsHurt = false;
+    }
+
+    private void TriggerGameOver()
     {
         isGameOver = true;
+        ResetAttackState();
         rigid.linearVelocity = Vector3.zero;
         anim.SetTrigger("isGameOver");
     }
+
+    #endregion
 }
