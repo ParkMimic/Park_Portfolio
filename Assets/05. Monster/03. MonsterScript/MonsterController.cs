@@ -207,32 +207,31 @@ public class MonsterController : MonoBehaviour
     {
         // 1. 상태 변경 및 행동 중지
         isHurt = true;
-        StopAllCoroutines(); // 중요! 다른 모든 코루틴, 특히 AttackSequence 같은 코루틴을 모두 중단.
         isAttacking = false; // 공격 중지
         anim.ResetTrigger("Attack"); // 혹시 모를 공격 애니메이션 트리거를 리셋하여 공격을 중단시킵니다.
 
         // 2. 시각적 피드백: 색상 변경
-        spriteRenderer.color = Color.red;
+        spriteRenderer.color = Color.white;
 
         // 3. 넉백 적용
-        // rigid.linearVelocity = Vector2.zero; // 이 라인을 주석처리하여 기존 속도에 넉백이 더해지도록 합니다.
+         //rigid.linearVelocity = Vector2.zero; // 이 라인을 주석처리하여 기존 속도에 넉백이 더해지도록 합니다.
         rigid.AddForce(knockbackDirection * hurtForce, ForceMode2D.Impulse); // 넉백 적용.
 
-        // 4. 애니메이션 재생
+        // 4. 애니메이션 재생과 동시에 하얀색으로 깜빡임.
         anim.SetTrigger("isHurt");
+        yield return new WaitForSeconds(0.1f);
+        spriteRenderer.color = originalColor; // 색상을 원래대로 복구
 
         // 5. 피격 지속 시간만큼 대기
         yield return new WaitForSeconds(hurtDuration);
 
         // 6. 상태 초기화
         isHurt = false;
-        spriteRenderer.color = originalColor; // 색상을 원래대로 복구
     }
 
     private void Die()
     {
         isDead = true;
-        StopAllCoroutines(); // 죽는 동안 모든 코루틴을 중단하여 다른 행동을 막습니다.
         anim.SetTrigger("isDead");
 
         // 물리엔진에 영향을 받지 않도록 Kinematic으로 변경
