@@ -253,13 +253,13 @@ public class PlayerController : MonoBehaviour
         if (!isAttacking)
         {
             currentAttack++;
-            isAttacking = true;
             PlayAttackAnimation(currentAttack);
         }
     }
 
     private void PlayAttackAnimation(int attackIndex)
     {
+        isAttacking = true;
         anim.SetTrigger("Attack" + attackIndex);
     }
 

@@ -194,12 +194,13 @@ public class MonsterController : MonoBehaviour
         }
         else
         {
+            StartCoroutine(HurtSequence(knockbackDirection));
             // 몬스터가 이미 피격 상태가 아닐 때만 피격 시퀀스를 시작합니다.
             // 이렇게 하면 여러 공격에 연속으로 맞더라도, 넉백/애니메이션이 겹치지 않습니다.
-            if (!isHurt)
-            {
-                StartCoroutine(HurtSequence(knockbackDirection));
-            }
+            //if (!isHurt)
+            //{
+            //    StartCoroutine(HurtSequence(knockbackDirection));
+            //}
         }
     }
 
@@ -214,7 +215,7 @@ public class MonsterController : MonoBehaviour
         spriteRenderer.color = Color.white;
 
         // 3. 넉백 적용
-         //rigid.linearVelocity = Vector2.zero; // 이 라인을 주석처리하여 기존 속도에 넉백이 더해지도록 합니다.
+        //rigid.linearVelocity = Vector2.zero; // 이 라인을 주석처리하여 기존 속도에 넉백이 더해지도록 합니다.
         rigid.AddForce(knockbackDirection * hurtForce, ForceMode2D.Impulse); // 넉백 적용.
 
         // 4. 애니메이션 재생과 동시에 하얀색으로 깜빡임.
