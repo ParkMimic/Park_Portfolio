@@ -21,6 +21,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int attackCount = 3;
     [SerializeField] private float comboResetTime = 1.0f;
 
+    [Header("패링 설정")]
+    [SerializeField] private float parryDuration = 0.3f; // 패링 유효 시간
+    private bool isParrying = false;
+
     [Header("잔상 효과 설정")]
     [SerializeField] private GameObject ghostPrefab;
     [SerializeField] private float ghostDelay = 0.05f;
@@ -106,7 +110,7 @@ public class PlayerController : MonoBehaviour
     {
         moveInput = Input.GetAxisRaw("Horizontal");
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0 && !isDashing && !isWallSliding)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && dashCooldownTimer <= 0 && !isDashing && !isWallSliding && !isParrying)
         {
             StartDash();
         }
@@ -117,14 +121,19 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.X) && !isWallSliding)
+        if (Input.GetKeyDown(KeyCode.X) && !isWallSliding && !isParrying)
         {
             HandleAttackInput();
         }
 
-        if (!isAttacking)
+        if (!isAttacking && !isParrying)
         {
             HandleJumpInput();
+        }
+
+        if (Input.GetKeyDown(KeyCode.C) && !isAttacking && !isDashing && !isParrying)
+        {
+            StartCoroutine(Parry());
         }
     }
 
@@ -149,7 +158,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (isAttacking)
+        if (currentAttack >= 1 || isParrying)
         {
             if (isGrounded) rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
         }
@@ -308,6 +317,18 @@ public class PlayerController : MonoBehaviour
 
     #endregion
 
+    #region 패링 (Parry)
+
+    private IEnumerator Parry()
+    {
+        isParrying = true;
+        anim.SetTrigger("Parry"); // 패링 애니메이션 실행
+        yield return new WaitForSeconds(parryDuration);
+        isParrying = false;
+    }
+
+    #endregion
+
     #region 충돌 및 상태 관리 (Collisions & State)
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -354,9 +375,24 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.CompareTag("HitZone") && !IsHurt)
         {
-            Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
-            PlayerManager.Instance.TakeDamage(1, knockDirection);
-            StartKnockback(knockDirection);
+            if (isParrying)
+            {
+                // 패링 성공!
+                MonsterController monster = collision.GetComponentInParent<MonsterController>();
+                if (monster != null)
+                {
+                    monster.TakeGroggyDamage(1);
+                    Debug.Log("패링 성공! 몬스터 그로기 수치 +1");
+                }
+                isParrying = false; // 패링 성공 시 즉시 상태 해제
+            }
+            else
+            {
+                // 일반 피격
+                Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
+                PlayerManager.Instance.TakeDamage(1, knockDirection);
+                StartKnockback(knockDirection);
+            }
         }
     }
 
