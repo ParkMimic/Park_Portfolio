@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
@@ -23,7 +24,11 @@ public class PlayerController : MonoBehaviour
 
     [Header("패링 설정")]
     [SerializeField] private float parryDuration = 0.3f; // 패링 유효 시간
+    [SerializeField] private float parryCooldown = 1.5f; // 패링 쿨타임
+    private float parryCooldownTimer; // 패링 쿨타임 타이머
     private bool isParrying = false;
+    private bool isParryWindowActive; // 패링 윈도우 활성화 여부
+    private bool wasParrySuccessful; // 패링 성공 여부
 
     [Header("잔상 효과 설정")]
     [SerializeField] private GameObject ghostPrefab;
@@ -322,9 +327,24 @@ public class PlayerController : MonoBehaviour
     private IEnumerator Parry()
     {
         isParrying = true;
+        isParryWindowActive = true;
+        wasParrySuccessful = false;
         anim.SetTrigger("Parry"); // 패링 애니메이션 실행
+
         yield return new WaitForSeconds(parryDuration);
+
+        isParryWindowActive = false;
+
+        // 패링 애니메이션이 끝날 때까지 잠시 대기
+        // 이 시간 동안에는 공격 받아도 데미지를 입지 않음
+
+        yield return new WaitForSeconds(0.2f); // 임의의 무적 시간 애니메이션 이벤트로 조절할 것.
+
         isParrying = false;
+        if (!wasParrySuccessful)
+        {
+            parryCooldownTimer = parryCooldown; // 패링 실패 시 쿨타임 설정
+        }
     }
 
     #endregion
@@ -373,7 +393,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("HitZone") && !IsHurt)
+        if (collision.CompareTag("EnemyAttack") && !IsHurt)
         {
             if (isParrying)
             {

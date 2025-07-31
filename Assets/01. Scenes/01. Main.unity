@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 379679513953821921, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.28
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 379679513953821921, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -167,41 +167,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5332253787953363503, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: m_CollisionDetection
-      value: 0
+    - target: {fileID: 6087227226993313681, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6668417305829119407, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
       propertyPath: m_Name
       value: Monster
       objectReference: {fileID: 0}
-    - target: {fileID: 6668417305829119407, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: m_Layer
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6668417305829119407, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
+    - target: {fileID: 6909700029999069596, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
+      propertyPath: attackHitboxObject
+      value: 
+      objectReference: {fileID: 493549110}
+    - target: {fileID: 8572168921066296937, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
       propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6668417305829119407, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: m_TagString
-      value: Monster
-      objectReference: {fileID: 0}
-    - target: {fileID: 6909700029999069596, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: hurtForce
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6909700029999069596, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6909700029999069596, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: hurtDuration
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6909700029999069596, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
-      propertyPath: attackCooldown
-      value: 2.5
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -255,6 +235,11 @@ Transform:
   - {fileID: 648547838}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &493549110 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8572168921066296937, guid: 04dc9a764f52fda4aab9f581a9fb9ab7, type: 3}
+  m_PrefabInstance: {fileID: 177019672}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &571076879
 GameObject:
   m_ObjectHideFlags: 0

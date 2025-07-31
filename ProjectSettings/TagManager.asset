@@ -8,6 +8,7 @@ TagManager:
   - Wall
   - HitZone
   - Monster
+  - EnemyAttack
   layers:
   - Default
   - TransparentFX
