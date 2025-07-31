@@ -200,6 +200,8 @@ MonoBehaviour:
   attackHitboxObject: {fileID: 8930458101878761537}
   attackCount: 3
   comboResetTime: 1
+  parryDuration: 0.2
+  parryCooldown: 1.5
   ghostPrefab: {fileID: 5614404443984792827, guid: 57b0d946a79f24e4c9dd3ffd35140900, type: 3}
   ghostDelay: 0.05
   ghostDelete: 0.35

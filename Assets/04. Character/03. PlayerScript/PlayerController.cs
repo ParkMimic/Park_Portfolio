@@ -136,7 +136,7 @@ public class PlayerController : MonoBehaviour
             HandleJumpInput();
         }
 
-        if (Input.GetKeyDown(KeyCode.C) && !isAttacking && !isDashing && !isParrying)
+        if (Input.GetKeyDown(KeyCode.C) && !isAttacking && !isDashing && !isParrying && parryCooldownTimer <= 0)
         {
             StartCoroutine(Parry());
         }
@@ -145,6 +145,7 @@ public class PlayerController : MonoBehaviour
     private void HandleTimers()
     {
         if (dashCooldownTimer > 0) dashCooldownTimer -= Time.deltaTime;
+        if (parryCooldownTimer > 0) parryCooldownTimer -= Time.deltaTime;
         if (Time.time - lastAttackTime > comboResetTime) ResetAttackState();
     }
 
@@ -326,19 +327,14 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Parry()
     {
-        isParrying = true;
         isParryWindowActive = true;
+        isParrying = true;
         wasParrySuccessful = false;
         anim.SetTrigger("Parry"); // 패링 애니메이션 실행
 
         yield return new WaitForSeconds(parryDuration);
 
         isParryWindowActive = false;
-
-        // 패링 애니메이션이 끝날 때까지 잠시 대기
-        // 이 시간 동안에는 공격 받아도 데미지를 입지 않음
-
-        yield return new WaitForSeconds(0.2f); // 임의의 무적 시간 애니메이션 이벤트로 조절할 것.
 
         isParrying = false;
         if (!wasParrySuccessful)
@@ -393,26 +389,27 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("EnemyAttack") && !IsHurt)
+        if (isParryWindowActive && collision.CompareTag("EnemyAttack"))
         {
-            if (isParrying)
+            MonsterController monster = collision.GetComponentInParent<MonsterController>();
+            if (monster != null)
             {
-                // 패링 성공!
-                MonsterController monster = collision.GetComponentInParent<MonsterController>();
-                if (monster != null)
-                {
-                    monster.TakeGroggyDamage(1);
-                    Debug.Log("패링 성공! 몬스터 그로기 수치 +1");
-                }
-                isParrying = false; // 패링 성공 시 즉시 상태 해제
+                monster.TakeGroggyDamage(1);
+                Debug.Log("패링 성공! 몬스터 그로기 수치 + 1");
             }
-            else
-            {
-                // 일반 피격
-                Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
-                PlayerManager.Instance.TakeDamage(1, knockDirection);
-                StartKnockback(knockDirection);
-            }
+            wasParrySuccessful = true; // 패링 성공!
+            isParryWindowActive = false; // 성공했으므로 창을 바로 닫음
+            isParrying = false; // 패링 상태 종료
+            return; // 피격 처리를 막기 위해 여기서 함수 종료.
+        }
+
+        if ((collision.CompareTag("HitZone") || collision.CompareTag("EnemyAttack")))
+        {
+            if (IsHurt) return;
+            // 일반 피격
+            Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
+            PlayerManager.Instance.TakeDamage(1, knockDirection);
+            StartKnockback(knockDirection);
         }
     }
 
@@ -440,6 +437,5 @@ public class PlayerController : MonoBehaviour
         rigid.linearVelocity = Vector3.zero;
         anim.SetTrigger("isGameOver");
     }
-
     #endregion
 }

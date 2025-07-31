@@ -208,11 +208,12 @@ MonoBehaviour:
   attackCooldown: 2.5
   pauseBeforeAttackTime: 0.2
   attackDelay: 0.4
-  attackHitboxObject: {fileID: 0}
-  parryFlashDuration: 0.1
+  attackHitboxObject: {fileID: 8572168921066296937}
+  parryFlashDuration: 0.15
   hurtDuration: 1.5
   hurtForce: 2
   maxGroggy: 1
+  currentGroggy: 1
   stunDuration: 2
   player: {fileID: 0}
   playerLayer:
@@ -236,7 +237,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6604937135578986287
 Transform:
   m_ObjectHideFlags: 0
@@ -282,11 +283,11 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -2.13, y: 1}
+  m_Offset: {x: -2.4606438, y: 1}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -296,5 +297,5 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 3, y: 2}
+  m_Size: {x: 2.3387127, y: 2}
   m_EdgeRadius: 0

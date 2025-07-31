@@ -28,7 +28,7 @@ public class MonsterController : MonoBehaviour
 
     [Header("그로기/기절 설정")]
     public float maxGroggy = 1f; // 최대 그로기 수치
-    private float currentGroggy; // 현재 그로기 수치
+    [SerializeField] private float currentGroggy; // 현재 그로기 수치
     public float stunDuration = 2f; // 기절 지속 시간
     private bool isStunned = false; // 기절 상태 여부
 
@@ -211,7 +211,7 @@ public class MonsterController : MonoBehaviour
 
     public void TakeGroggyDamage(float amount)
     {
-        if (isDead || isStunned) return;
+        if (isDead) return;
 
         currentGroggy += amount;
         if (currentGroggy >= maxGroggy)
@@ -236,7 +236,7 @@ public class MonsterController : MonoBehaviour
     private IEnumerator AttackSequence()
     {
         // 공격 조건이 충족되었는지 확인하기 위한 로그
-        Debug.Log("공격 조건 충족! 공격 시퀀스를 시작합니다.");
+        //Debug.Log("공격 조건 충족! 공격 시퀀스를 시작합니다.");
 
         isAttacking = true;
         anim.SetTrigger("Attack");
@@ -252,15 +252,16 @@ public class MonsterController : MonoBehaviour
         currentGroggy = 0;
         isAttacking = false;
         anim.ResetTrigger("Attack");
-        rigid.linearVelocity = Vector2.zero;
 
-        // anim.SetTrigger("Stunned");
+        anim.SetTrigger("Stunned");
         spriteRenderer.color = Color.yellow;
+        attackHitboxObject.SetActive(false);
 
         yield return new WaitForSeconds(stunDuration);
 
         isStunned = false;
         spriteRenderer.color = originalColor;
+        currentGroggy = maxGroggy; // 기절 후 그로기 수치 초기화
     }
 
     private IEnumerator HurtSequence(Vector2 knockbackDirection)
