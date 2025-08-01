@@ -39,9 +39,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float hurtForce = 3f;
     [SerializeField] private float hurtDuration = 0.5f;
 
+    [Header("레이캐스트 설정")]
+    [SerializeField] private LayerMask platformLayer; // 바닥과 벽을 감지할 통합 레이어
+    [SerializeField] private float groundCheckDistance = 0.1f;
+    [SerializeField] private float wallCheckDistance = 0.1f;
+
     // -- 컴포넌트 변수 --
     private Rigidbody2D rigid;
     private Animator anim;
+    private BoxCollider2D boxCollider; // Raycast를 위해 BoxCollider2D 추가
 
     // -- 상태(State) 변수 --
     public bool IsHurt { get; private set; }
@@ -76,6 +82,7 @@ public class PlayerController : MonoBehaviour
     {
         rigid = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        boxCollider = GetComponent<BoxCollider2D>(); // 컴포넌트 가져오기
     }
 
     private void Start()
@@ -91,6 +98,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        HandleCollisionChecks(); // 매 프레임 충돌 감지
         HandleTimers();
         HandleInput();
         UpdateAnimator();
@@ -347,44 +355,38 @@ public class PlayerController : MonoBehaviour
 
     #region 충돌 및 상태 관리 (Collisions & State)
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void HandleCollisionChecks()
     {
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                if (contact.normal.y > 0.7f)
-                {
-                    isGrounded = true;
-                    isJumping = false;
-                    isDoubleJumping = false;
-                    isFalling = false;
-                    isWallSliding = false;
-                    jumpCount = 0;
-                    break;
-                }
-            }
-        }
-        else if (collision.gameObject.CompareTag("Wall"))
-        {
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                if (!isGrounded && Mathf.Abs(contact.normal.x) > 0.7f)
-                {
-                    isWallSliding = true;
-                    isDoubleJumping = false;
-                    jumpCount = 0;
-                    ResetAttackState();
-                    break;
-                }
-            }
-        }
-    }
+        bool previouslyGrounded = isGrounded;
+        // Ground Check using BoxCast
+        isGrounded = Physics2D.BoxCast(boxCollider.bounds.center, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f), 0f, Vector2.down, groundCheckDistance, platformLayer);
 
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Ground")) isGrounded = false;
-        if (collision.gameObject.CompareTag("Wall")) isWallSliding = false;
+        if (!previouslyGrounded && isGrounded)
+        {
+            isJumping = false;
+            isDoubleJumping = false;
+            isFalling = false;
+            isWallSliding = false;
+            jumpCount = 0;
+        }
+
+        // Wall Check using Raycast
+        if (!isGrounded)
+        {
+            float direction = transform.localScale.x;
+            isWallSliding = Physics2D.Raycast(boxCollider.bounds.center, new Vector2(direction, 0), boxCollider.bounds.extents.x + wallCheckDistance, platformLayer);
+
+            if (isWallSliding)
+            {
+                isDoubleJumping = false;
+                jumpCount = 0;
+                ResetAttackState();
+            }
+        }
+        else
+        {
+            isWallSliding = false;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -446,5 +448,28 @@ public class PlayerController : MonoBehaviour
         rigid.linearVelocity = Vector3.zero;
         anim.SetTrigger("isGameOver");
     }
+    #endregion
+
+    #region Gizmos
+
+    private void OnDrawGizmos()
+    {
+        if (boxCollider == null)
+        {
+            boxCollider = GetComponent<BoxCollider2D>();
+            if (boxCollider == null) return; // 여전히 null이면 Gizmo를 그릴 수 없음
+        }
+
+        // Ground Check Gizmo
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireCube((Vector2)boxCollider.bounds.center + Vector2.down * groundCheckDistance, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f));
+
+        // Wall Check Gizmo
+        Gizmos.color = Color.red;
+        float direction = transform.localScale.x;
+        Vector2 origin = boxCollider.bounds.center;
+        Gizmos.DrawLine(origin, origin + new Vector2(direction, 0) * (boxCollider.bounds.extents.x + wallCheckDistance));
+    }
+
     #endregion
 }
