@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6631454896172698953}
   - component: {fileID: 487474479703175927}
   - component: {fileID: 4497115849588652488}
-  - component: {fileID: 4648490895270314554}
+  - component: {fileID: 5501113000142535318}
   - component: {fileID: 6021568663022294920}
   - component: {fileID: 5209452989722772101}
   - component: {fileID: 8829220407459316961}
@@ -120,8 +120,8 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
---- !u!70 &4648490895270314554
-CapsuleCollider2D:
+--- !u!61 &5501113000142535318
+BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -154,9 +154,18 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.016847461, y: 0.72961354}
-  m_Size: {x: 0.29892462, y: 1.4128742}
-  m_Direction: 0
+  m_Offset: {x: -0.05, y: 0.62}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.4, y: 0}
+    oldSize: {x: 3.45, y: 2.2}
+    newSize: {x: 3.45, y: 2.2}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 0.35, y: 1.15}
+  m_EdgeRadius: 0
 --- !u!95 &6021568663022294920
 Animator:
   serializedVersion: 7
@@ -193,7 +202,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 7
   jumpForce: 7
-  wallSlideSpeed: 2
+  wallSlideSpeed: 4
   dashSpeed: 15
   dashDuration: 0.25
   dashCooldown: 1.3

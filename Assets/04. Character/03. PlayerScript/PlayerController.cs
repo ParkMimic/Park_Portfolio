@@ -411,6 +411,14 @@ public class PlayerController : MonoBehaviour
             PlayerManager.Instance.TakeDamage(1, knockDirection);
             StartKnockback(knockDirection);
         }
+
+        if (collision.CompareTag("DeadZone"))
+        {
+            // 사망 존에서는 무조건 죽음 처리
+            Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
+            PlayerManager.Instance.TakeDamage(PlayerManager.Instance.MaxHP, knockDirection);
+            StartKnockback(knockDirection);
+        }
     }
 
     public void StartKnockback(Vector2 direction)
@@ -433,6 +441,7 @@ public class PlayerController : MonoBehaviour
     private void TriggerGameOver()
     {
         isGameOver = true;
+        isDashing = false;
         ResetAttackState();
         rigid.linearVelocity = Vector3.zero;
         anim.SetTrigger("isGameOver");

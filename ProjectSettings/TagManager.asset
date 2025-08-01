@@ -9,6 +9,7 @@ TagManager:
   - HitZone
   - Monster
   - EnemyAttack
+  - DeadZone
   layers:
   - Default
   - TransparentFX
@@ -52,8 +53,14 @@ TagManager:
   - name: ForeGround
     uniqueID: 444142983
     locked: 0
+  - name: TileMap
+    uniqueID: 2545424957
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: UI
+    uniqueID: 3225739127
     locked: 0
   m_RenderingLayers:
   - Default
