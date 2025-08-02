@@ -65,6 +65,7 @@ public class PlayerController : MonoBehaviour
     private float lastMoveDirection = 1f;
     private int jumpCount;
     private float originalGravity;
+    private float collisionCheckCooldown; // 충돌 감지 지연시간
 
     // -- 타이머 및 카운터 변수 --
     private float dashTime;
@@ -155,6 +156,7 @@ public class PlayerController : MonoBehaviour
         if (dashCooldownTimer > 0) dashCooldownTimer -= Time.deltaTime;
         if (parryCooldownTimer > 0) parryCooldownTimer -= Time.deltaTime;
         if (Time.time - lastAttackTime > comboResetTime) ResetAttackState();
+        if (collisionCheckCooldown > 0) collisionCheckCooldown -= Time.deltaTime; // 쿨다운 감소
     }
 
     private void UpdateAnimator()
@@ -201,6 +203,8 @@ public class PlayerController : MonoBehaviour
 
             rigid.linearVelocity = new Vector2(rigid.linearVelocity.x, 0);
             rigid.AddForce(new Vector2(0, jumpForce), ForceMode2D.Impulse);
+
+            collisionCheckCooldown = 0.1f; // 점프 직후 0.1초간 충돌 감지 방지
         }
 
         if (Input.GetKeyUp(KeyCode.Z) && rigid.linearVelocity.y > 0)
@@ -357,6 +361,8 @@ public class PlayerController : MonoBehaviour
 
     private void HandleCollisionChecks()
     {
+        if (collisionCheckCooldown > 0) return; // 쿨다운 중이면 충돌 감지 안함
+
         bool previouslyGrounded = isGrounded;
         // Ground Check using BoxCast
         isGrounded = Physics2D.BoxCast(boxCollider.bounds.center, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f), 0f, Vector2.down, groundCheckDistance, platformLayer);
