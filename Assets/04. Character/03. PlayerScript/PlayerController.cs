@@ -367,17 +367,19 @@ public class PlayerController : MonoBehaviour
         // Ground Check using BoxCast
         isGrounded = Physics2D.BoxCast(boxCollider.bounds.center, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f), 0f, Vector2.down, groundCheckDistance, platformLayer);
 
-        if (!previouslyGrounded && isGrounded)
+        // isGrounded가 true이면 isWallSliding은 항상 false가 되도록 수정
+        if (isGrounded)
         {
-            isJumping = false;
-            isDoubleJumping = false;
-            isFalling = false;
             isWallSliding = false;
-            jumpCount = 0;
+            if (!previouslyGrounded) // 막 착지한 경우
+            {
+                isJumping = false;
+                isDoubleJumping = false;
+                isFalling = false;
+                jumpCount = 0;
+            }
         }
-
-        // Wall Check using Raycast
-        if (!isGrounded)
+        else // 공중에 있는 경우에만 벽 감지
         {
             float direction = transform.localScale.x;
             isWallSliding = Physics2D.Raycast(boxCollider.bounds.center, new Vector2(direction, 0), boxCollider.bounds.extents.x + wallCheckDistance, platformLayer);
@@ -388,10 +390,6 @@ public class PlayerController : MonoBehaviour
                 jumpCount = 0;
                 ResetAttackState();
             }
-        }
-        else
-        {
-            isWallSliding = false;
         }
     }
 
