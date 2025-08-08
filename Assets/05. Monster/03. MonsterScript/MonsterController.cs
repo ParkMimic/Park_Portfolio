@@ -32,9 +32,9 @@ public class MonsterController : MonoBehaviour
     public float stunDuration = 2f; // 기절 지속 시간
     private bool isStunned = false; // 기절 상태 여부
 
-    [Header("플레이어 설정")]
+    [Header("감지 설정")]
     public Transform player; // 플레이어 Transform
-    public LayerMask playerLayer; // 플레이어 레이어
+    public LayerMask sightLayerMask; // 플레이어를 감지할 레이어
 
     [Header("시야 설정")]
     public float visionRange = 10f; // 플레이어를 발견할 수 있는 최대 거리
@@ -155,14 +155,21 @@ public class MonsterController : MonoBehaviour
     {
         Vector2 direction = transform.localScale.x > 0 ? Vector2.left : Vector2.right;
         Vector2 raycastOrigin = (Vector2)transform.position + new Vector2(0, 1f);
-        RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, direction, visionRange, playerLayer);
+        RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, direction, visionRange, sightLayerMask);
 
         Debug.DrawRay(raycastOrigin, direction * visionRange, Color.red);
 
-        if (hit.collider != null && hit.collider.CompareTag("Player"))
+        if (hit.collider != null)
         {
-            hasSpottedPlayer = true;
-            Debug.Log("플레이어 발견!");
+            if (hit.collider.CompareTag("Player"))
+            {
+                hasSpottedPlayer = true;
+                Debug.Log("플레이어 발견!");
+            }
+        }
+        else
+        {
+            hasSpottedPlayer = false;
         }
     }
 

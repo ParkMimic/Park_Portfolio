@@ -66,6 +66,8 @@ public class PlayerController : MonoBehaviour
     private int jumpCount;
     private float originalGravity;
     private float collisionCheckCooldown; // 충돌 감지 지연시간
+    private int originalLayer;
+    private int dashingLayer;
 
     // -- 타이머 및 카운터 변수 --
     private float dashTime;
@@ -84,6 +86,10 @@ public class PlayerController : MonoBehaviour
         rigid = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         boxCollider = GetComponent<BoxCollider2D>(); // 컴포넌트 가져오기
+
+        // 레이어 정보 저장
+        originalLayer = gameObject.layer;
+        dashingLayer = LayerMask.NameToLayer("DashingPlayer");
     }
 
     private void Start()
@@ -220,6 +226,7 @@ public class PlayerController : MonoBehaviour
     private void StartDash()
     {
         isDashing = true;
+        gameObject.layer = dashingLayer; // 대쉬 중에는 다른 레이어로 변경
         anim.SetBool("isDash", true);
         ResetAttackState();
         isWallSliding = false;
@@ -247,6 +254,7 @@ public class PlayerController : MonoBehaviour
     private void EndDash()
     {
         isDashing = false;
+        gameObject.layer = originalLayer; // 대쉬가 끝나면 원래 레이어로 복원
         anim.SetBool("isDash", false);
         rigid.gravityScale = originalGravity;
         rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
@@ -381,8 +389,20 @@ public class PlayerController : MonoBehaviour
         }
         else // 공중에 있는 경우에만 벽 감지
         {
+            // 3점 벽 감지 로직
             float direction = transform.localScale.x;
-            isWallSliding = Physics2D.Raycast(boxCollider.bounds.center, new Vector2(direction, 0), boxCollider.bounds.extents.x + wallCheckDistance, platformLayer);
+            float checkLength = boxCollider.bounds.extents.x + wallCheckDistance;
+            Vector2 centerOrigin = boxCollider.bounds.center;
+            float verticalOffset = boxCollider.bounds.extents.y * 0.9f;
+
+            Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
+            Vector2 lowerOrigin = (Vector2)centerOrigin - new Vector2(0, verticalOffset);
+
+            bool wallDetectedCenter = Physics2D.Raycast(centerOrigin, new Vector2(direction, 0), checkLength, platformLayer);
+            bool wallDetectedUpper = Physics2D.Raycast(upperOrigin, new Vector2(direction, 0), checkLength, platformLayer);
+            bool wallDetectedLower = Physics2D.Raycast(lowerOrigin, new Vector2(direction, 0), checkLength, platformLayer);
+
+            isWallSliding = wallDetectedCenter || wallDetectedUpper || wallDetectedLower;
 
             if (isWallSliding)
             {
@@ -468,11 +488,20 @@ public class PlayerController : MonoBehaviour
         Gizmos.color = Color.green;
         Gizmos.DrawWireCube((Vector2)boxCollider.bounds.center + Vector2.down * groundCheckDistance, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f));
 
-        // Wall Check Gizmo
+        // Wall Check Gizmos
         Gizmos.color = Color.red;
         float direction = transform.localScale.x;
-        Vector2 origin = boxCollider.bounds.center;
-        Gizmos.DrawLine(origin, origin + new Vector2(direction, 0) * (boxCollider.bounds.extents.x + wallCheckDistance));
+        Vector2 centerOrigin = boxCollider.bounds.center;
+        float checkLength = boxCollider.bounds.extents.x + wallCheckDistance;
+        float verticalOffset = boxCollider.bounds.extents.y * 0.9f; // 상단/하단 체크를 위한 오프셋
+
+        Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
+        Vector2 lowerOrigin = (Vector2)centerOrigin - new Vector2(0, verticalOffset);
+
+        // 3개의 체크 라인 그리기
+        Gizmos.DrawLine(centerOrigin, centerOrigin + new Vector2(direction, 0) * checkLength);
+        Gizmos.DrawLine(upperOrigin, upperOrigin + new Vector2(direction, 0) * checkLength);
+        Gizmos.DrawLine(lowerOrigin, lowerOrigin + new Vector2(direction, 0) * checkLength);
     }
 
     #endregion

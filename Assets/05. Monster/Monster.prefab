@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5332253787953363503}
   - component: {fileID: 6118629953698908438}
   - component: {fileID: 6909700029999069596}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Monster
   m_TagString: Monster
   m_Icon: {fileID: 0}
@@ -216,9 +216,9 @@ MonoBehaviour:
   currentGroggy: 1
   stunDuration: 2
   player: {fileID: 0}
-  playerLayer:
+  sightLayerMask:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 1536
   visionRange: 10
   loseSightDistance: 15
 --- !u!1 &8572168921066296937
