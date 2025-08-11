@@ -38,6 +38,7 @@ public class PlayerController : MonoBehaviour
     [Header("피격 설정")]
     [SerializeField] private float hurtForce = 3f;
     [SerializeField] private float hurtDuration = 0.5f;
+    public bool isHurt;
 
     [Header("레이캐스트 설정")]
     [SerializeField] private LayerMask platformLayer; // 바닥과 벽을 감지할 통합 레이어
@@ -50,7 +51,6 @@ public class PlayerController : MonoBehaviour
     private BoxCollider2D boxCollider; // Raycast를 위해 BoxCollider2D 추가
 
     // -- 상태(State) 변수 --
-    public bool IsHurt { get; private set; }
     private bool isGrounded;
     private bool isJumping;
     private bool isDoubleJumping;
@@ -66,8 +66,6 @@ public class PlayerController : MonoBehaviour
     private int jumpCount;
     private float originalGravity;
     private float collisionCheckCooldown; // 충돌 감지 지연시간
-    private int originalLayer;
-    private int dashingLayer;
 
     // -- 타이머 및 카운터 변수 --
     private float dashTime;
@@ -86,10 +84,6 @@ public class PlayerController : MonoBehaviour
         rigid = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         boxCollider = GetComponent<BoxCollider2D>(); // 컴포넌트 가져오기
-
-        // 레이어 정보 저장
-        originalLayer = gameObject.layer;
-        dashingLayer = LayerMask.NameToLayer("DashingPlayer");
     }
 
     private void Start()
@@ -99,9 +93,9 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (isGameOver || IsHurt)
+        if (isGameOver || isHurt)
         {
-            if (IsHurt) ResetAttackState();
+            if (isHurt) ResetAttackState();
             return;
         }
 
@@ -118,7 +112,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isGameOver || IsHurt || isDashing) return;
+        if (isGameOver || isHurt || isDashing) return;
         HandleMovement();
     }
 
@@ -226,7 +220,6 @@ public class PlayerController : MonoBehaviour
     private void StartDash()
     {
         isDashing = true;
-        gameObject.layer = dashingLayer; // 대쉬 중에는 다른 레이어로 변경
         anim.SetBool("isDash", true);
         ResetAttackState();
         isWallSliding = false;
@@ -254,7 +247,6 @@ public class PlayerController : MonoBehaviour
     private void EndDash()
     {
         isDashing = false;
-        gameObject.layer = originalLayer; // 대쉬가 끝나면 원래 레이어로 복원
         anim.SetBool("isDash", false);
         rigid.gravityScale = originalGravity;
         rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
@@ -393,16 +385,16 @@ public class PlayerController : MonoBehaviour
             float direction = transform.localScale.x;
             float checkLength = boxCollider.bounds.extents.x + wallCheckDistance;
             Vector2 centerOrigin = boxCollider.bounds.center;
-            float verticalOffset = boxCollider.bounds.extents.y * 0.9f;
+            //float verticalOffset = boxCollider.bounds.extents.y * 0.9f;
 
-            Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
-            Vector2 lowerOrigin = (Vector2)centerOrigin - new Vector2(0, verticalOffset);
+            //Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
+            //Vector2 lowerOrigin = (Vector2)centerOrigin - new Vector2(0, verticalOffset);
 
             bool wallDetectedCenter = Physics2D.Raycast(centerOrigin, new Vector2(direction, 0), checkLength, platformLayer);
-            bool wallDetectedUpper = Physics2D.Raycast(upperOrigin, new Vector2(direction, 0), checkLength, platformLayer);
-            bool wallDetectedLower = Physics2D.Raycast(lowerOrigin, new Vector2(direction, 0), checkLength, platformLayer);
+            //bool wallDetectedUpper = Physics2D.Raycast(upperOrigin, new Vector2(direction, 0), checkLength, platformLayer);
+            //bool wallDetectedLower = Physics2D.Raycast(lowerOrigin, new Vector2(direction, 0), checkLength, platformLayer);
 
-            isWallSliding = wallDetectedCenter || wallDetectedUpper || wallDetectedLower;
+            isWallSliding = wallDetectedCenter;// || wallDetectedUpper || wallDetectedLower;
 
             if (isWallSliding)
             {
@@ -421,7 +413,6 @@ public class PlayerController : MonoBehaviour
             if (monster != null)
             {
                 monster.TakeGroggyDamage(1);
-                Debug.Log("패링 성공! 몬스터 그로기 수치 + 1");
             }
             wasParrySuccessful = true; // 패링 성공!
             isParryWindowActive = false; // 성공했으므로 창을 바로 닫음
@@ -429,9 +420,10 @@ public class PlayerController : MonoBehaviour
             return; // 피격 처리를 막기 위해 여기서 함수 종료.
         }
 
-        if ((collision.CompareTag("HitZone") || collision.CompareTag("EnemyAttack")))
+        // collision.CompareTag("HitZone") || 
+        if ((collision.CompareTag("EnemyAttack")))
         {
-            if (IsHurt) return;
+            if (isHurt) return;
             // 일반 피격
             Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
             PlayerManager.Instance.TakeDamage(1, knockDirection);
@@ -449,19 +441,19 @@ public class PlayerController : MonoBehaviour
 
     public void StartKnockback(Vector2 direction)
     {
-        if (IsHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
+        //if (isHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
         StartCoroutine(Knockback(direction));
     }
 
     private IEnumerator Knockback(Vector2 direction)
     {
         if (PlayerManager.Instance.HP <= 0) yield break;
-        IsHurt = true;
+        isHurt = true;
         anim.SetTrigger("isHurt");
         rigid.linearVelocity = Vector2.zero;
         rigid.AddForce(direction * hurtForce, ForceMode2D.Impulse);
         yield return new WaitForSeconds(hurtDuration);
-        IsHurt = false;
+        isHurt = false;
     }
 
     private void TriggerGameOver()
@@ -493,15 +485,15 @@ public class PlayerController : MonoBehaviour
         float direction = transform.localScale.x;
         Vector2 centerOrigin = boxCollider.bounds.center;
         float checkLength = boxCollider.bounds.extents.x + wallCheckDistance;
-        float verticalOffset = boxCollider.bounds.extents.y * 0.9f; // 상단/하단 체크를 위한 오프셋
+        //float verticalOffset = boxCollider.bounds.extents.y * 0.9f; // 상단/하단 체크를 위한 오프셋
 
-        Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
-        Vector2 lowerOrigin = (Vector2)centerOrigin - new Vector2(0, verticalOffset);
+        //Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
+        //Vector2 lowerOrigin = (Vector2)centerOrigin - new Vector2(0, verticalOffset);
 
         // 3개의 체크 라인 그리기
         Gizmos.DrawLine(centerOrigin, centerOrigin + new Vector2(direction, 0) * checkLength);
-        Gizmos.DrawLine(upperOrigin, upperOrigin + new Vector2(direction, 0) * checkLength);
-        Gizmos.DrawLine(lowerOrigin, lowerOrigin + new Vector2(direction, 0) * checkLength);
+        //Gizmos.DrawLine(upperOrigin, upperOrigin + new Vector2(direction, 0) * checkLength);
+        //Gizmos.DrawLine(lowerOrigin, lowerOrigin + new Vector2(direction, 0) * checkLength);
     }
 
     #endregion

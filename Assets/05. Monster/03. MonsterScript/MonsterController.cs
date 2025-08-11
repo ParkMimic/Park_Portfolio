@@ -46,6 +46,7 @@ public class MonsterController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Animator anim;
     private Color originalColor;
+    private BoxCollider2D hitBox;
 
     // 상태(State) 변수
     private bool isAttacking = false;
@@ -70,8 +71,9 @@ public class MonsterController : MonoBehaviour
         lastAttackTime = -attackCooldown; // 시작하자마자 공격할 수 있도록
         originalColor = spriteRenderer.color;
 
-        // 히트박스 비활성화로 시작
-        if (attackHitboxObject != null) attackHitboxObject.SetActive(false);
+        hitBox = attackHitboxObject.GetComponent<BoxCollider2D>();
+        hitBox.enabled = false; // 공격 히트박스 비활성화
+
 
         if (player == null)
         {
@@ -164,7 +166,6 @@ public class MonsterController : MonoBehaviour
             if (hit.collider.CompareTag("Player"))
             {
                 hasSpottedPlayer = true;
-                Debug.Log("플레이어 발견!");
             }
         }
         else
@@ -242,14 +243,9 @@ public class MonsterController : MonoBehaviour
 
     private IEnumerator AttackSequence()
     {
-        // 공격 조건이 충족되었는지 확인하기 위한 로그
-        //Debug.Log("공격 조건 충족! 공격 시퀀스를 시작합니다.");
-
         isAttacking = true;
         anim.SetTrigger("Attack");
 
-        // 이제 코루틴은 애니메이션을 재생시키기만 하고 바로 종료됩니다.
-        // 실제 공격 판정은 애니메이션 이벤트가 처리합니다.
         yield return null;
     }
 
@@ -262,7 +258,7 @@ public class MonsterController : MonoBehaviour
 
         anim.SetTrigger("Stunned");
         spriteRenderer.color = Color.yellow;
-        attackHitboxObject.SetActive(false);
+        hitBox.enabled = false; // 기절 시 공격 히트박스 비활성화
 
         yield return new WaitForSeconds(stunDuration);
 
@@ -302,19 +298,24 @@ public class MonsterController : MonoBehaviour
     // 공격 애니메이션의 특정 프레임에서 호출
     public void ActivateAttackHitbox()
     {
-        if (attackHitboxObject != null) attackHitboxObject.SetActive(true);
+        if (attackHitboxObject != null) 
+        {
+            hitBox.enabled = true;
+        } 
     }
 
     // 공격 애니메이션의 다른 프레임에서 호출
     public void DeactivateAttackHitbox()
     {
-        if (attackHitboxObject != null) attackHitboxObject.SetActive(false);
+        if (attackHitboxObject != null)
+        {
+            hitBox.enabled = false;
+        }
     }
 
     // Animation Event로 호출될 함수
     public void FinishAttack()
     {
-        Debug.Log("FinishAttack 이벤트 호출됨! isAttacking 상태를 false로 설정합니다.");
         isAttacking = false;
     }
 
