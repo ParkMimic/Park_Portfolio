@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -59,6 +60,7 @@ public class PlayerController : MonoBehaviour
     private bool isWallSliding;
     private bool isAttacking;
     private bool isGameOver;
+    private bool isInCutscene;
 
     // -- 내부 로직 변수 --
     private float moveInput;
@@ -93,7 +95,7 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (isGameOver || isHurt)
+        if (isGameOver || isHurt || isInCutscene)
         {
             if (isHurt) ResetAttackState();
             return;
@@ -112,7 +114,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isGameOver || isHurt || isDashing) return;
+        if (isGameOver || isHurt || isDashing || isInCutscene) return;
         HandleMovement();
     }
 
@@ -496,5 +498,48 @@ public class PlayerController : MonoBehaviour
         //Gizmos.DrawLine(lowerOrigin, lowerOrigin + new Vector2(direction, 0) * checkLength);
     }
 
+    #endregion
+
+    #region 컷씬 동작
+
+    // 외부에서 플레이어 조작을 막거나 허용할 때 사용하는 함수들
+    public void DisableControl()
+    {
+        isInCutscene = true; // 컷신 시작, 플레이어 조작 비활성화
+        rigid.linearVelocity = Vector2.zero; // 즉시 정지
+        anim.SetBool("isWalk", false); // 걷기 애니메이션 비활성화
+    }
+
+    public void EnableControl()
+    {
+        isInCutscene = false; // 컷신 종료
+    }
+
+    // 지정된 위치로 이동만 담당하는 코루틴을 시작시키는 함수
+    public Coroutine StartMoveToPosition(Vector2 targetPosition)
+    {
+        return StartCoroutine(MoveToPositionCoroutine(targetPosition));
+    }
+
+    private IEnumerator MoveToPositionCoroutine(Vector2 targetPosition)
+    {
+        // 이동 방향 결정 및 캐릭터 방향 전환
+        float direction = Mathf.Sign(targetPosition.x - transform.position.x);
+        transform.localScale = new Vector3(direction, 1, 1); // 캐릭터 방향 전환
+
+        // 걷기 애니메이션 활성화
+        anim.SetBool("isWalk", true);
+
+        // 목표 지점의 X축에 충분히 가까워질 때까지 반복
+        while (Mathf.Abs(targetPosition.x - transform.position.x) > 0.1f)
+        {
+            rigid.linearVelocity = new Vector2(direction * moveSpeed, rigid.linearVelocity.y);
+            yield return null; // 다음 프레임까지 대기
+        }
+
+        // 목표 지점 도착 후
+        rigid.linearVelocity = Vector2.zero; // 이동 정지
+        anim.SetBool("isWalk", false); // 걷기 애니메이션 비활성화
+    }
     #endregion
 }
