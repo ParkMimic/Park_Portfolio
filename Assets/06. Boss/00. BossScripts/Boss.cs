@@ -1,337 +1,278 @@
 using System.Collections;
 using UnityEngine;
 
-public class Boss : MonoBehaviour
+public class Boss_2 : MonoBehaviour
 {
-    #region º¯¼ö ¼±¾ğ (Fields & Properties)
+    #region ìƒíƒœ ì—´ê±°í˜• (State Enum)
+    public enum BossState { Chasing, Attacking, Stunned, Dead }
+    [Header("ìƒíƒœ")]
+    [SerializeField] private BossState currentState;
+    #endregion
 
-    [Header("±âº» ¼³Á¤")]
+    #region ê¸°ë³¸ ì„¤ì • (Fields & Properties)
+
+    [Header("ê¸°ë³¸ ìŠ¤íƒ¯")]
     public float moveSpeed = 2f;
-    public float maxHealth = 3;
+    public float maxHealth = 100;
     [SerializeField] private float currentHealth;
 
-    [Header("°ø°İ ¼³Á¤")]
-    public int contactDamage = 1; // Á¢ÃË ½Ã µ¥¹ÌÁö
-    public int attackDamage = 1; // Ä® °ø°İ µ¥¹ÌÁö
-    public float attackRange = 3f; // ÀÌ °Å¸® ¾È¿¡ µé¾î¿À¸é °ø°İ ½ÃÀÛ
-    public float attackCooldown = 2f; // ÇÑ ¹ø °ø°İ ÈÄ ´ÙÀ½ °ø°İ±îÁöÀÇ ÃÖ¼Ò ½Ã°£
-    public float pauseBeforeAttackTime = 0.2f; // °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç ½ÃÀÛ ÈÄ °ø°İ ÆÇÁ¤±îÁöÀÇ ½Ã°£
-    public float attackDelay = 0.4f; // °ø°İ ÆÇÁ¤ Áö¼Ó½Ã°£
-    [SerializeField] private GameObject attackHitboxObject; // °ø°İ È÷Æ®¹Ú½º
+    [Header("í”Œë ˆì´ì–´")]
+    public Transform player;
 
-    [Header("ÆĞ¸µ ¼³Á¤")]
-    public float parryFlashDuration = 0.1f; // ÆĞ¸µ °¡´É Å¸ÀÌ¹Ö¿¡ ¹øÂ½ÀÌ´Â ½Ã°£
+    [Header("ì¼ë°˜ ê³µê²©")]
+    public int attackDamage = 15;
+    public float attackRange = 3f;
+    public float attackCooldown = 2f;
+    [SerializeField] private GameObject attackHitboxObject;
 
-    [Header("ÇÇ°İ ¼³Á¤")]
-    public float hurtDuration = 0.5f; // ÇÇ°İ ÈÄ ¹«Àû½Ã°£
-    public float hurtForce = 5f; // ÇÇ°İ ½Ã ¹Ğ·Á³ª´Â Èû
+    [Header("í”¼ê²© ë° ê·¸ë¡œê¸°")]
+    public float hurtForce = 5f;
+    public float maxGroggy = 100f;
+    [SerializeField] private float currentGroggy;
+    public float stunDuration = 5f;
 
-    [Header("±×·Î±â/±âÀı ¼³Á¤")]
-    public float maxGroggy = 1f; // ÃÖ´ë ±×·Î±â ¼öÄ¡
-    [SerializeField] private float currentGroggy; // ÇöÀç ±×·Î±â ¼öÄ¡
-    public float stunDuration = 2f; // ±âÀı Áö¼Ó ½Ã°£
-    private bool isStunned = false; // ±âÀı »óÅÂ ¿©ºÎ
-
-    [Header("°¨Áö ¼³Á¤")]
-    public Transform player; // ÇÃ·¹ÀÌ¾î Transform
-    public LayerMask sightLayerMask; // ÇÃ·¹ÀÌ¾î¸¦ °¨ÁöÇÒ ·¹ÀÌ¾î
-
-    [Header("½Ã¾ß ¼³Á¤")]
-    public float visionRange = 10f; // ÇÃ·¹ÀÌ¾î¸¦ ¹ß°ßÇÒ ¼ö ÀÖ´Â ÃÖ´ë °Å¸®
-    public float loseSightDistance = 15f; // ÇÃ·¹ÀÌ¾î°¡ ÀÌ °Å¸® ÀÌ»ó ¹ş¾î³ª¸é ½Ã¾ß¸¦ ÀÒÀ½
-    private bool hasSpottedPlayer = false; // ÇÃ·¹ÀÌ¾î¸¦ ¹ß°ßÇß´ÂÁö ¿©ºÎ
-
-    // ÄÄÆ÷³ÍÆ® º¯¼ö
+    // ì»´í¬ë„ŒíŠ¸ ë° ë‚´ë¶€ ë³€ìˆ˜
     private Rigidbody2D rigid;
     private SpriteRenderer spriteRenderer;
     private Animator anim;
     private Color originalColor;
-    private BoxCollider2D hitBox;
-
-    // »óÅÂ(State) º¯¼ö
-    private bool isAttacking = false;
-    private bool isDead = false;
-    private bool isHurt = false;
-
-    // ³»ºÎ ·ÎÁ÷ º¯¼ö
+    private BoxCollider2D attackHitbox;
     private float lastAttackTime;
-
     #endregion
 
-    #region ±âº» ÇÔ¼ö (Unity Lifecycle)
+    #region ìœ ë‹ˆí‹° ìƒëª…ì£¼ê¸° (Unity Lifecycle)
 
     private void Awake()
     {
         rigid = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
-
-        currentHealth = maxHealth;
-        currentGroggy = 0;
-        lastAttackTime = -attackCooldown; // ½ÃÀÛÇÏÀÚ¸¶ÀÚ °ø°İÇÒ ¼ö ÀÖµµ·Ï
-        originalColor = spriteRenderer.color;
-
-        hitBox = attackHitboxObject.GetComponent<BoxCollider2D>();
-        hitBox.enabled = false; // °ø°İ È÷Æ®¹Ú½º ºñÈ°¼ºÈ­
-
+        attackHitbox = attackHitboxObject.GetComponent<BoxCollider2D>();
 
         if (player == null)
         {
-            GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
-            if (playerObject != null)
-            {
-                player = playerObject.transform;
-            }
-            else
-            {
-                Debug.LogError("ÇÃ·¹ÀÌ¾î ¿ÀºêÁ§Æ®¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù. 'Player' ÅÂ±×¸¦ È®ÀÎÇØÁÖ¼¼¿ä.");
-                enabled = false;
-            }
+            player = GameObject.FindGameObjectWithTag("Player")?.transform;
         }
+    }
+
+    private void Start()
+    {
+        currentHealth = maxHealth;
+        currentGroggy = 0;
+        originalColor = spriteRenderer.color;
+        attackHitbox.enabled = false;
+        lastAttackTime = -attackCooldown;
+
+        if (player == null)
+        {
+            Debug.LogError("'Player' íƒœê·¸ë¥¼ ê°€ì§„ ì˜¤ë¸Œì íŠ¸ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ë³´ìŠ¤ê°€ ë¹„í™œì„±í™”ë©ë‹ˆë‹¤.");
+            enabled = false;
+            return;
+        }
+
+        // ì‹œì‘ê³¼ ë™ì‹œì— ì¶”ì  ìƒíƒœë¡œ ì„¤ì •
+        SetState(BossState.Chasing);
     }
 
     private void Update()
     {
-        if (isDead || isStunned || player == null || PlayerManager.Instance.HP <= 0) return;
-
-        HandlePlayerDetection();
-        HandleAttacking();
-        HandleSpriteFlip();
-    }
-
-    private void FixedUpdate()
-    {
-        HandleMovement();
-    }
-
-    #endregion
-
-    #region ·ÎÁ÷ (Logic)
-
-    private void HandlePlayerDetection()
-    {
-        if (!hasSpottedPlayer)
+        if (player == null || PlayerManager.Instance.HP <= 0)
         {
-            CheckForPlayerInSight();
-        }
-        else
-        {
-            float distanceToPlayer = Vector2.Distance(transform.position, player.position);
-            if (distanceToPlayer > loseSightDistance)
-            {
-                hasSpottedPlayer = false;
-            }
-        }
-    }
-
-    private void HandleMovement()
-    {
-        if (isDead || isHurt || isAttacking || isStunned || !hasSpottedPlayer || Vector2.Distance(transform.position, player.position) <= attackRange)
-        {
-            rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
-            anim.SetBool("isWalking", false);
+            StopMovement();
             return;
         }
 
-        Vector2 direction = (player.position - transform.position).normalized;
-        rigid.linearVelocity = new Vector2(direction.x * moveSpeed, rigid.linearVelocity.y);
-        anim.SetBool("isWalking", true);
-    }
-
-    private void HandleSpriteFlip()
-    {
-        if (!isAttacking && hasSpottedPlayer)
+        // ìƒíƒœì— ë”°ë¥¸ í–‰ë™ ì²˜ë¦¬
+        switch (currentState)
         {
-            if (player.position.x < transform.position.x)
-            {
-                transform.localScale = new Vector3(1, 1, 1);
-            }
-            else
-            {
-                transform.localScale = new Vector3(-1, 1, 1);
-            }
+            case BossState.Chasing:
+                UpdateChasing();
+                break;
+            case BossState.Attacking:
+            case BossState.Stunned:
+            case BossState.Dead:
+                // íŠ¹ì • ìƒíƒœì—ì„œëŠ” ì›€ì§ì„ ë° ì¶”ê°€ í–‰ë™ ì •ì§€
+                StopMovement();
+                break;
+        }
+    }
+    #endregion
+
+    #region ìƒíƒœ ê´€ë¦¬ (State Machine)
+
+    private void SetState(BossState newState)
+    {
+        if (currentState == newState) return;
+        currentState = newState;
+
+        // ìƒíƒœ ë³€ê²½ ì‹œ ì´ˆê¸°í™” ë¡œì§
+        switch (currentState)
+        {
+            case BossState.Chasing:
+                anim.SetBool("isWalking", true);
+                break;
+            case BossState.Stunned:
+                StartCoroutine(StunSequence());
+                break;
+            case BossState.Dead:
+                StartCoroutine(DieSequence());
+                break;
         }
     }
 
-    private void CheckForPlayerInSight()
+    private void UpdateChasing()
     {
-        Vector2 direction = transform.localScale.x > 0 ? Vector2.left : Vector2.right;
-        Vector2 raycastOrigin = (Vector2)transform.position + new Vector2(0, 1f);
-        RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, direction, visionRange, sightLayerMask);
+        // ê³µê²© ê²°ì •
+        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        DecideNextAttack(distanceToPlayer);
 
-        Debug.DrawRay(raycastOrigin, direction * visionRange, Color.red);
-
-        if (hit.collider != null)
+        // ê³µê²© ì¤‘ì´ ì•„ë‹ ë•Œë§Œ í”Œë ˆì´ì–´ ë°©í–¥ìœ¼ë¡œ ì´ë™
+        if (currentState == BossState.Chasing)
         {
-            if (hit.collider.CompareTag("Player"))
-            {
-                hasSpottedPlayer = true;
-            }
+            MoveTowardsPlayer();
+            FlipSpriteTowardsPlayer();
+        }
+    }
+
+    #endregion
+
+    #region í–‰ë™ ë¡œì§ (Behavior Logic)
+
+    private void MoveTowardsPlayer()
+    {
+        Vector2 direction = (player.position - transform.position).normalized;
+        rigid.linearVelocity = new Vector2(direction.x * moveSpeed, rigid.linearVelocity.y);
+    }
+
+    private void StopMovement()
+    {
+        rigid.linearVelocity = Vector2.zero;
+        anim.SetBool("isWalking", false);
+    }
+
+    private void FlipSpriteTowardsPlayer()
+    {
+        if (player.position.x < transform.position.x)
+        {
+            transform.localScale = new Vector3(1, 1, 1);
         }
         else
         {
-            hasSpottedPlayer = false;
+            transform.localScale = new Vector3(-1, 1, 1);
         }
     }
 
     #endregion
 
-    #region °ø°İ (Attack)
+    #region ê³µê²© (Attacks)
 
-    private void HandleAttacking()
+    private void DecideNextAttack(float distanceToPlayer)
     {
-        if (!hasSpottedPlayer || isAttacking) return;
-
-        float distanceToPlayer = Vector2.Distance(transform.position, player.position);
         if (Time.time >= lastAttackTime + attackCooldown && distanceToPlayer <= attackRange)
         {
-            lastAttackTime = Time.time;
-            StartCoroutine(AttackSequence());
+            StartCoroutine(BasicAttackSequence());
         }
     }
 
-    // Animation Event·Î È£ÃâµÉ ÇÔ¼ö: ÆĞ¸µ Å¸ÀÌ¹Ö ½Ã°¢ È¿°ú
-    public void TriggerParryFlash()
+    private IEnumerator BasicAttackSequence()
     {
-        StartCoroutine(ParryFlashEffect());
-    }
+        SetState(BossState.Attacking);
+        StopMovement();
+        lastAttackTime = Time.time;
 
-    #endregion
-
-    #region ÇÇ°İ ¹× Ã¼·Â (Damage & Health)
-
-    public void TakeDamage(float damage, Vector2 knockbackDirection)
-    {
-        if (isDead) return;
-
-        float finalDamage = isStunned ? damage * 3 : damage;
-        currentHealth -= finalDamage;
-
-        if (currentHealth <= 0)
-        {
-            Die();
-        }
-        else if (!isStunned)
-        {
-            StartCoroutine(HurtSequence(knockbackDirection));
-        }
-    }
-
-    public void TakeGroggyDamage(float amount)
-    {
-        if (isDead) return;
-
-        currentGroggy += amount;
-        if (currentGroggy >= maxGroggy)
-        {
-            StartCoroutine(StunSequence());
-        }
-    }
-
-    private void Die()
-    {
-        isDead = true;
-        anim.SetTrigger("isDead");
-        rigid.linearVelocity = Vector2.zero;
-        rigid.angularVelocity = 0f;
-        rigid.bodyType = RigidbodyType2D.Kinematic;
-    }
-
-    #endregion
-
-    #region ÄÚ·çÆ¾ (Coroutines)
-
-    private IEnumerator AttackSequence()
-    {
-        isAttacking = true;
         anim.SetTrigger("Attack");
 
         yield return null;
     }
 
-    private IEnumerator StunSequence()
+    // Animation Event: ì¼ë°˜ ê³µê²© Hitbox í™œì„±í™”
+    public void ActivateAttackHitbox()
     {
-        isStunned = true;
-        currentGroggy = 0;
-        isAttacking = false;
-        anim.ResetTrigger("Attack");
-
-        anim.SetTrigger("Stunned");
-        spriteRenderer.color = Color.yellow;
-        hitBox.enabled = false; // ±âÀı ½Ã °ø°İ È÷Æ®¹Ú½º ºñÈ°¼ºÈ­
-
-        yield return new WaitForSeconds(stunDuration);
-
-        isStunned = false;
-        spriteRenderer.color = originalColor;
-        currentGroggy = maxGroggy; // ±âÀı ÈÄ ±×·Î±â ¼öÄ¡ ÃÊ±âÈ­
+        attackHitbox.enabled = true;
     }
 
-    private IEnumerator HurtSequence(Vector2 knockbackDirection)
+    // Animation Event: ì¼ë°˜ ê³µê²© Hitbox ë¹„í™œì„±í™”
+    public void DeactivateAttackHitbox()
     {
-        isHurt = true;
-        isAttacking = false;
-        anim.ResetTrigger("Attack");
-        spriteRenderer.color = Color.white;
-        rigid.AddForce(knockbackDirection * hurtForce, ForceMode2D.Impulse);
-
-        anim.SetTrigger("isHurt");
-        yield return new WaitForSeconds(0.1f);
-        spriteRenderer.color = originalColor;
-
-        yield return new WaitForSeconds(hurtDuration);
-
-        isHurt = false;
+        attackHitbox.enabled = false;
     }
 
-    private IEnumerator ParryFlashEffect()
+    // Animation Event: ê³µê²© ì• ë‹ˆë©”ì´ì…˜ ì¢…ë£Œ
+    public void FinishAttack()
     {
+        if (currentState != BossState.Dead && currentState != BossState.Stunned)
+        {
+            SetState(BossState.Chasing);
+        }
+    }
+
+    #endregion
+
+    #region í”¼ê²© ë° ì²´ë ¥ (Damage & Health)
+
+    public void TakeDamage(float damage, Vector2 knockbackDirection)
+    {
+        if (currentState == BossState.Dead) return;
+
+        float finalDamage = (currentState == BossState.Stunned) ? damage * 2f : damage;
+        currentHealth -= finalDamage;
+
+        StartCoroutine(HurtEffect(knockbackDirection));
+
+        if (currentHealth <= 0)
+        {
+            SetState(BossState.Dead);
+        }
+    }
+
+    public void TakeGroggyDamage(float amount)
+    {
+        if (currentState == BossState.Stunned || currentState == BossState.Dead) return;
+
+        currentGroggy += amount;
+        if (currentGroggy >= maxGroggy)
+        {
+            SetState(BossState.Stunned);
+        }
+    }
+
+    private IEnumerator HurtEffect(Vector2 knockbackDirection)
+    {
+        if (currentState != BossState.Attacking && currentState != BossState.Stunned)
+        {
+            rigid.AddForce(knockbackDirection * hurtForce, ForceMode2D.Impulse);
+        }
+
         spriteRenderer.color = Color.red;
-        yield return new WaitForSeconds(parryFlashDuration);
+        yield return new WaitForSeconds(0.1f);
         spriteRenderer.color = originalColor;
     }
 
     #endregion
 
-    #region ¾Ö´Ï¸ŞÀÌ¼Ç ÀÌº¥Æ® (Animation Events)
+    #region íŠ¹ìˆ˜ ìƒíƒœ (Special States)
 
-    // °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ Æ¯Á¤ ÇÁ·¹ÀÓ¿¡¼­ È£Ãâ
-    public void ActivateAttackHitbox()
+    private IEnumerator StunSequence()
     {
-        if (attackHitboxObject != null)
-        {
-            hitBox.enabled = true;
-        }
+        StopMovement();
+        currentGroggy = 0;
+        anim.SetTrigger("Stunned");
+        spriteRenderer.color = Color.green;
+
+        yield return new WaitForSeconds(stunDuration);
+
+        spriteRenderer.color = originalColor;
+        SetState(BossState.Chasing);
     }
 
-    // °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ´Ù¸¥ ÇÁ·¹ÀÓ¿¡¼­ È£Ãâ
-    public void DeactivateAttackHitbox()
+    private IEnumerator DieSequence()
     {
-        if (attackHitboxObject != null)
-        {
-            hitBox.enabled = false;
-        }
-    }
+        StopMovement();
+        anim.SetTrigger("isDead");
+        GetComponent<Collider2D>().enabled = false;
+        rigid.bodyType = RigidbodyType2D.Kinematic;
 
-    // Animation Event·Î È£ÃâµÉ ÇÔ¼ö
-    public void FinishAttack()
-    {
-        isAttacking = false;
-    }
-
-    // Á×´Â ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ³¡³¯ ¶§ È£Ãâ
-    public void DisableMonsterCollider()
-    {
-        Collider2D monsterCollider = GetComponent<Collider2D>();
-        if (monsterCollider != null)
-        {
-            monsterCollider.enabled = false;
-        }
-    }
-
-    // DisableMonsterCollider ÀÌÈÄ È£Ãâ
-    public void DestroyMonster()
-    {
+        yield return new WaitForSeconds(2f);
         Destroy(gameObject);
     }
 
