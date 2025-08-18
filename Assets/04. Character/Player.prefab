@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 487474479703175927}
   - component: {fileID: 4497115849588652488}
   - component: {fileID: 5501113000142535318}
+  - component: {fileID: 4052881478961895800}
   - component: {fileID: 6021568663022294920}
   - component: {fileID: 5209452989722772101}
   - component: {fileID: 8829220407459316961}
@@ -108,8 +109,8 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 0}
+  m_GravityScale: 2
+  m_Material: {fileID: 6200000, guid: 7f951a8b005dffa43b173a8f4ae5dc9f, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -166,6 +167,43 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.35, y: 1.6789095}
   m_EdgeRadius: 0
+--- !u!70 &4052881478961895800
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3440742729174468078}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 2048
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: -0.05, y: 0.8844547}
+  m_Size: {x: 0.35, y: 1.67891}
+  m_Direction: 0
 --- !u!95 &6021568663022294920
 Animator:
   serializedVersion: 7
@@ -201,7 +239,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 7
-  jumpForce: 7
+  jumpForce: 10
   wallSlideSpeed: 4
   dashSpeed: 15
   dashDuration: 0.25
@@ -216,6 +254,7 @@ MonoBehaviour:
   ghostDelete: 0.35
   hurtForce: 3
   hurtDuration: 0.5
+  isHurt: 0
   platformLayer:
     serializedVersion: 2
     m_Bits: 512

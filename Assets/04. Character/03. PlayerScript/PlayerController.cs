@@ -49,7 +49,7 @@ public class PlayerController : MonoBehaviour
     // -- 컴포넌트 변수 --
     private Rigidbody2D rigid;
     private Animator anim;
-    private BoxCollider2D boxCollider; // Raycast를 위해 BoxCollider2D 추가
+    private CapsuleCollider2D capsuleCollider; // Raycast를 위해 CapsuleCollider2D로 변경
 
     // -- 상태(State) 변수 --
     private bool isGrounded;
@@ -85,7 +85,7 @@ public class PlayerController : MonoBehaviour
     {
         rigid = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
-        boxCollider = GetComponent<BoxCollider2D>(); // 컴포넌트 가져오기
+        capsuleCollider = GetComponent<CapsuleCollider2D>(); // 컴포넌트 가져오기
     }
 
     private void Start()
@@ -367,7 +367,7 @@ public class PlayerController : MonoBehaviour
 
         bool previouslyGrounded = isGrounded;
         // Ground Check using BoxCast
-        isGrounded = Physics2D.BoxCast(boxCollider.bounds.center, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f), 0f, Vector2.down, groundCheckDistance, platformLayer);
+        isGrounded = Physics2D.BoxCast(capsuleCollider.bounds.center, new Vector2(capsuleCollider.bounds.size.x * 0.9f, 0.1f), 0f, Vector2.down, groundCheckDistance, platformLayer);
 
         // isGrounded가 true이면 isWallSliding은 항상 false가 되도록 수정
         if (isGrounded)
@@ -385,8 +385,8 @@ public class PlayerController : MonoBehaviour
         {
             // 3점 벽 감지 로직
             float direction = transform.localScale.x;
-            float checkLength = boxCollider.bounds.extents.x + wallCheckDistance;
-            Vector2 centerOrigin = boxCollider.bounds.center;
+            float checkLength = capsuleCollider.bounds.extents.x + wallCheckDistance;
+            Vector2 centerOrigin = capsuleCollider.bounds.center;
             //float verticalOffset = boxCollider.bounds.extents.y * 0.9f;
 
             //Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
@@ -472,21 +472,21 @@ public class PlayerController : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (boxCollider == null)
+        if (capsuleCollider == null)
         {
-            boxCollider = GetComponent<BoxCollider2D>();
-            if (boxCollider == null) return; // 여전히 null이면 Gizmo를 그릴 수 없음
+            capsuleCollider = GetComponent<CapsuleCollider2D>();
+            if (capsuleCollider == null) return; // 여전히 null이면 Gizmo를 그릴 수 없음
         }
 
         // Ground Check Gizmo
         Gizmos.color = Color.green;
-        Gizmos.DrawWireCube((Vector2)boxCollider.bounds.center + Vector2.down * groundCheckDistance, new Vector2(boxCollider.bounds.size.x * 0.9f, 0.1f));
+        Gizmos.DrawWireCube((Vector2)capsuleCollider.bounds.center + Vector2.down * groundCheckDistance, new Vector2(capsuleCollider.bounds.size.x * 0.9f, 0.1f));
 
         // Wall Check Gizmos
         Gizmos.color = Color.red;
         float direction = transform.localScale.x;
-        Vector2 centerOrigin = boxCollider.bounds.center;
-        float checkLength = boxCollider.bounds.extents.x + wallCheckDistance;
+        Vector2 centerOrigin = capsuleCollider.bounds.center;
+        float checkLength = capsuleCollider.bounds.extents.x + wallCheckDistance;
         //float verticalOffset = boxCollider.bounds.extents.y * 0.9f; // 상단/하단 체크를 위한 오프셋
 
         //Vector2 upperOrigin = (Vector2)centerOrigin + new Vector2(0, verticalOffset);
@@ -508,6 +508,13 @@ public class PlayerController : MonoBehaviour
         isInCutscene = true; // 컷신 시작, 플레이어 조작 비활성화
         rigid.linearVelocity = Vector2.zero; // 즉시 정지
         anim.SetBool("isWalk", false); // 걷기 애니메이션 비활성화
+        anim.SetBool("isDash", false); // 대쉬 애니메이션 비활성화
+        anim.SetBool("isFalling", false); // 떨어지는 애니메이션 비활성화
+        anim.ResetTrigger("Attack1");
+        anim.ResetTrigger("Attack2");
+        anim.ResetTrigger("Attack3"); // 공격 애니메이션 비활성화
+        anim.SetBool("isJump", false); // 점프 애니메이션 비활성화
+        anim.SetBool("isDoubleJump", false); // 더블 점프 애니메이션 비활성화
     }
 
     public void EnableControl()
