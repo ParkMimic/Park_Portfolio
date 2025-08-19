@@ -441,19 +441,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void StartKnockback(Vector2 direction)
+    public void StartKnockback(Vector2 direction, float force)
     {
         //if (isHurt) return; // 이미 아픈 상태면 중복으로 처리하지 않음.
-        StartCoroutine(Knockback(direction));
+        StartCoroutine(Knockback(direction, force));
     }
 
-    private IEnumerator Knockback(Vector2 direction)
+    // '힘'을 입력받지 않는, 똑같은 이름의 함수를 하나 더 만들어줍니다.
+    public void StartKnockback(Vector2 direction)
+    {
+        // 이 함수가 호출되면, 자신의 기본 넉백 힘(hurtForce)을 사용해서
+        // 원래의 StartKnockback 함수를 대신 호출해줍니다.
+        StartKnockback(direction, hurtForce);
+    }
+
+    private IEnumerator Knockback(Vector2 direction, float force)
     {
         if (PlayerManager.Instance.HP <= 0) yield break;
         isHurt = true;
         anim.SetTrigger("isHurt");
         rigid.linearVelocity = Vector2.zero;
-        rigid.AddForce(direction * hurtForce, ForceMode2D.Impulse);
+        rigid.AddForce(direction * force, ForceMode2D.Impulse);
         yield return new WaitForSeconds(hurtDuration);
         isHurt = false;
     }

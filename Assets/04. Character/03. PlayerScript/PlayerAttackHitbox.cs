@@ -43,6 +43,7 @@ public class PlayerAttackHitbox : MonoBehaviour
         if (other.CompareTag("Monster") && !hittedColliders.Contains(other))
         {
             MonsterController monster = other.GetComponent<MonsterController>();
+            BossController boss = other.GetComponent<BossController>();
 
             if (monster != null)
             {
@@ -52,6 +53,11 @@ public class PlayerAttackHitbox : MonoBehaviour
 
                 // 2. 맞은 적 목록에 추가하여 중복 데미지 방지
                 hittedColliders.Add(other);
+            }
+            else if (boss != null)
+            {
+                // 보스에게도 동일한 방식으로 데미지를 적용합니다.
+                BossManager.Instance.TakeDamage((int)attackDamage);
             }
         }
     }
