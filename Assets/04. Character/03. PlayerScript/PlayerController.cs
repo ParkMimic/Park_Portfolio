@@ -345,12 +345,13 @@ public class PlayerController : MonoBehaviour
         isParrying = true;
         wasParrySuccessful = false;
         anim.SetTrigger("Parry"); // 패링 애니메이션 실행
+        anim.SetBool("isParry", true);
 
         yield return new WaitForSeconds(parryDuration);
 
         isParryWindowActive = false;
-
         isParrying = false;
+        anim.SetBool("isParry", false); // 패링 애니메이션 종료
         if (!wasParrySuccessful)
         {
             parryCooldownTimer = parryCooldown; // 패링 실패 시 쿨타임 설정
@@ -412,19 +413,31 @@ public class PlayerController : MonoBehaviour
         if (isParryWindowActive && collision.CompareTag("EnemyAttack"))
         {
             MonsterController monster = collision.GetComponentInParent<MonsterController>();
+            BossController boss = collision.GetComponentInParent<BossController>();
             if (monster != null)
             {
                 monster.TakeGroggyDamage(1);
             }
+            else if (boss != null)
+            {
+                BossManager.Instance.TakeGroggyDamage(1);
+            }
+
             wasParrySuccessful = true; // 패링 성공!
+
+            StartCoroutine(Blink());
+
             isParryWindowActive = false; // 성공했으므로 창을 바로 닫음
             isParrying = false; // 패링 상태 종료
+            anim.SetBool("isParry", false); // 패링 애니메이션 종료
             return; // 피격 처리를 막기 위해 여기서 함수 종료.
         }
 
         // collision.CompareTag("HitZone") || 
-        if ((collision.CompareTag("EnemyAttack")))
+        if ((collision.CompareTag("EnemyAttack")) && !wasParrySuccessful)
         {
+            Debug.Log("플레이어가 적의 공격에 맞았습니다.");
+            wasParrySuccessful = false; // 패링 실패
             if (isHurt) return;
             // 일반 피격
             Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
@@ -464,6 +477,22 @@ public class PlayerController : MonoBehaviour
         rigid.AddForce(direction * force, ForceMode2D.Impulse);
         yield return new WaitForSeconds(hurtDuration);
         isHurt = false;
+    }
+
+    private IEnumerator Blink()
+    {
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null) yield break;
+        Color originalColor = spriteRenderer.color;
+        float blinkDuration = 0.3f;
+        int blinkCount = 1;
+        for (int i = 0; i < blinkCount; i++)
+        {
+            spriteRenderer.color = new Color(0f, 196f, 255f);
+            yield return new WaitForSeconds(blinkDuration / 2);
+            spriteRenderer.color = originalColor; // 원래 색으로 돌아옴
+            yield return new WaitForSeconds(blinkDuration / 2);
+        }
     }
 
     private void TriggerGameOver()

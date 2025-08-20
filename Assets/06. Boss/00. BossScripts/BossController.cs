@@ -182,6 +182,12 @@ public class BossController : MonoBehaviour
 
         foreach (var action in pattern.actions)
         {
+            // 행동 실행 전, 보스의 상태가 공격 상태가 아니면(예: 기절) 패턴을 종료합니다.
+            if (CurrentState != BossState.Attacking)
+            {
+                yield break;
+            }
+
             this.currentAction = action;
             isAttackFinished = false;
 
@@ -200,7 +206,12 @@ public class BossController : MonoBehaviour
 
         this.currentAction = null;
         Debug.Log($"패턴 종료: {pattern.patternName}");
-        SetState(BossState.Idle);
+
+        // 패턴이 정상적으로 끝났을 때만 상태를 Idle로 변경합니다.
+        if (CurrentState == BossState.Attacking)
+        {
+            SetState(BossState.Idle);
+        }
     }
 
     IEnumerator PerformAction(AttackAction action)

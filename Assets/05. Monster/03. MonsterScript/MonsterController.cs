@@ -252,8 +252,9 @@ public class MonsterController : MonoBehaviour
     private IEnumerator StunSequence()
     {
         isStunned = true;
+        isHurt = false;
         currentGroggy = 0;
-        isAttacking = false;
+        FinishAttack();
         anim.ResetTrigger("Attack");
 
         anim.SetTrigger("Stunned");

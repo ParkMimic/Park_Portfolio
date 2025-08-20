@@ -52,6 +52,12 @@ public class BossManager : MonoBehaviour
     {
         if (hp <= 0) return; // 이미 죽은 상태면 무시
 
+        // 스턴 상태일 경우 데미지 3배
+        if (boss.CurrentState == BossController.BossState.Stunned)
+        {
+            damage *= 3;
+        }
+
         hp -= damage;
 
         if (hp <= 0)
