@@ -182,7 +182,7 @@ public class BossController : MonoBehaviour
 
         foreach (var action in pattern.actions)
         {
-            // 행동 실행 전, 보스의 상태가 공격 상태가 아니면(예: 기절) 패턴을 종료합니다.
+            // 행동 실행 전, 보스의 상태가 공격 상태가 아니면(예: 기절) 패턴을 중단합니다.
             if (CurrentState != BossState.Attacking)
             {
                 yield break;
@@ -195,7 +195,8 @@ public class BossController : MonoBehaviour
 
             if (action.attackType != AttackType.Dash)
             {
-                yield return new WaitUntil(() => isAttackFinished);
+                // isAttackFinished가 true가 되거나, 보스 상태가 Attacking이 아니게 될 때까지 기다립니다.
+                yield return new WaitUntil(() => isAttackFinished || CurrentState != BossState.Attacking);
             }
 
             if (action.postDelay > 0)
@@ -208,6 +209,7 @@ public class BossController : MonoBehaviour
         Debug.Log($"패턴 종료: {pattern.patternName}");
 
         // 패턴이 정상적으로 끝났을 때만 상태를 Idle로 변경합니다.
+        // (기절했거나 죽었을 경우 상태를 덮어쓰지 않기 위함)
         if (CurrentState == BossState.Attacking)
         {
             SetState(BossState.Idle);

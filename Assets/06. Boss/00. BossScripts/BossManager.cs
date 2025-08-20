@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using Unity.Cinemachine;
 
 public class BossManager : MonoBehaviour
 {
@@ -19,6 +21,9 @@ public class BossManager : MonoBehaviour
     public float maxGroggy = 10f;       // 기절에 필요한 총 그로기 수치
     public float stunDuration = 5f;      // 기절 지속 시간
     private float currentGroggy = 0f;    // 현재 그로기 수치
+
+    [Header("보스 사망 시, 열릴 문")]
+    public List<DoorScript> doorToOpen = new List<DoorScript>();
 
     #endregion
 
@@ -89,6 +94,19 @@ public class BossManager : MonoBehaviour
         boss.SetState(BossController.BossState.Dead);
         // 여기에 추가적인 죽음 처리 로직을 넣을 수 있습니다.
         // (예: 보스 체력 UI 비활성화, 충돌 비활성화 등)
+
+        if (doorToOpen != null && doorToOpen.Count > 0)
+        {
+            foreach (var door in doorToOpen)
+            {
+                if (door != null)
+                {
+                    door.StartOpening();
+                }
+            }
+        }
+
+        CutSceneManager.Instance.ChangeCamera("FollowCamera");
     }
 
     private IEnumerator StunSequence()

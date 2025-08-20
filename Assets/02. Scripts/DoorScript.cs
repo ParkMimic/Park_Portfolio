@@ -5,7 +5,8 @@ public class DoorScript : MonoBehaviour
     public Transform openTransform;
     public Transform closedTransform;
 
-    private bool isClosing = false;
+    public bool isClosing = false;
+    public bool isOpening = false;
 
     void Start()
     {
@@ -18,12 +19,22 @@ public class DoorScript : MonoBehaviour
         // isClosing이 true일 때만 문을 닫는 로직 실행
         if (isClosing)
         {
-            transform.position = Vector3.MoveTowards(transform.position, closedTransform.position, Time.deltaTime * 2f);
+            transform.position = Vector3.MoveTowards(transform.position, closedTransform.position, Time.deltaTime * 10f);
 
             // 문이 목표 위치에 도달하면, isClosing을 false로 바꿔 이동을 멈춤
             if (transform.position == closedTransform.position)
             {
                 isClosing = false;
+            }
+        }
+
+        if (isOpening)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, openTransform.position, Time.deltaTime * 10f);
+
+            if (transform.position == openTransform.position)
+            {
+                isOpening = false;
             }
         }
     }
@@ -35,5 +46,11 @@ public class DoorScript : MonoBehaviour
         // 현재 로직에서는 다시 호출해도 문제 없으므로 간단하게 유지합니다.
         isClosing = true;
         Debug.Log("문 닫기를 시작합니다.");
+    }
+
+    public void StartOpening()
+    {
+        isOpening = true;
+        Debug.Log("문 열기를 시작합니다.");
     }
 }
