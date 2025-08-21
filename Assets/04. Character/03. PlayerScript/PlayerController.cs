@@ -430,6 +430,7 @@ public class PlayerController : MonoBehaviour
             isParryWindowActive = false; // 성공했으므로 창을 바로 닫음
             isParrying = false; // 패링 상태 종료
             anim.SetBool("isParry", false); // 패링 애니메이션 종료
+            Debug.Log("패링 종료");
             return; // 피격 처리를 막기 위해 여기서 함수 종료.
         }
 
@@ -492,7 +493,6 @@ public class PlayerController : MonoBehaviour
             yield return new WaitForSeconds(blinkDuration / 2);
             spriteRenderer.color = originalColor; // 원래 색으로 돌아옴
             yield return new WaitForSeconds(blinkDuration / 2);
-            wasParrySuccessful = false;
         }
     }
 

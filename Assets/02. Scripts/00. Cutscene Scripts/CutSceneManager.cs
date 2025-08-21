@@ -18,8 +18,8 @@ public class CutSceneManager : MonoBehaviour
         }
     }
 
-    [Header("관리할 시네머신 카메라 목록")]
-    [SerializeField] private CinemachineCamera[] cutsceneCameras; // 컷씬 카메라 배열
+    [Header("컷신용 시네머신 카메라 목록")]
+    [SerializeField] private CinemachineCamera[] cutsceneCameras; // 컷신 카메라 배열
 
     /// <summary>
     /// 지정된 이름의 시네머신 카메라를 활성화합니다.
@@ -33,12 +33,12 @@ public class CutSceneManager : MonoBehaviour
             // 카메라 이름이 일치하는지 확인합니다.
             if (cam.gameObject.name == cameraName)
             {
-                // 이름이 일치하는 카메라는 높은 우선 순위를 부여하여 활성화 시킵니다.
+                // 이름이 일치하는 카메라의 우선 순위를 높여서 활성화 시킵니다.
                 cam.Priority = 100;
             }
             else
             {
-                // 그 외 모든 카메라는 낮은 우선순위를 부여하여 비활성화 시킵니다.
+                // 그 외 모든 카메라의 우선순위를 낮춰서 비활성화 시킵니다.
                 cam.Priority = 10;
             }
         }
