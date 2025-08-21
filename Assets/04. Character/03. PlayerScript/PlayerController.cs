@@ -492,6 +492,7 @@ public class PlayerController : MonoBehaviour
             yield return new WaitForSeconds(blinkDuration / 2);
             spriteRenderer.color = originalColor; // 원래 색으로 돌아옴
             yield return new WaitForSeconds(blinkDuration / 2);
+            wasParrySuccessful = false;
         }
     }
 
