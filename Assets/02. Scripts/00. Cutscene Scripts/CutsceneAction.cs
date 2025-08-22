@@ -11,7 +11,8 @@ public enum ActionType
     ChangeCamera, // 카메라 변경
     MovePlayer, // 플레이어 이동
     Wait, // 지정된 시간만큼 대기
-    ActivateGameObject // 게임 오브젝트 활성화/비활성화
+    ActivateGameObject, // 게임 오브젝트 활성화/비활성화
+    PauseGame
 }
 
 /// <summary>
@@ -29,4 +30,5 @@ public class CutsceneAction
     public float duration;
     public GameObject targetObject;
     public bool activationState;
+    public bool pauseGame;
 }

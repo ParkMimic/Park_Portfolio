@@ -15,6 +15,7 @@ public class SendMessage : MonoBehaviour
     }
     private void Update()
     {
+        if (player == null) return;
         if (player.position.x < transform.position.x)
         {
             spriteRenderer.flipX = true;

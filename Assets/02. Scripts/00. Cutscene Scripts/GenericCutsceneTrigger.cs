@@ -63,6 +63,17 @@ public class GenericCutsceneTrigger : MonoBehaviour
                         action.targetObject.SetActive(action.activationState);
                     }
                     break;
+
+                case ActionType.PauseGame:
+                    if (action.pauseGame == true)
+                    {
+                        Time.timeScale = 0f;
+                    }
+                    else
+                    {
+                        Time.timeScale = 1f;
+                    }
+                        break;
             }
         }
 
@@ -73,8 +84,6 @@ public class GenericCutsceneTrigger : MonoBehaviour
     // 컷신 종료를 처리하는 함수
     private void EndCutscene()
     {
-        Debug.Log("컷신 종료. 문 닫기를 시도합니다.");
-
         if (player != null)
         {
             player.EnableControl(); // 플레이어 조작 활성화

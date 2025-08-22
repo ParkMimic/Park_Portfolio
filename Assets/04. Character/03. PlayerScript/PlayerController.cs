@@ -503,6 +503,7 @@ public class PlayerController : MonoBehaviour
         ResetAttackState();
         rigid.linearVelocity = Vector3.zero;
         anim.SetTrigger("isGameOver");
+        GameManager.Instance.GameOver();
     }
     #endregion
 
