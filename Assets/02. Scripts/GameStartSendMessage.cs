@@ -4,24 +4,36 @@ using UnityEngine.Rendering;
 
 public class GameStartSendMessage : MonoBehaviour
 {
-
-    [SerializeField] private Animator anim;
-
-    private void Start()
-    {
-        anim = GetComponentInChildren<Animator>();
-    }
+    public Animator childTextAnimator;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))
-            anim.SetTrigger("FadeIn");
+        {
+            if (childTextAnimator != null)
+            {
+                childTextAnimator.SetTrigger("FadeIn");
+            }
+            else
+            {
+                Debug.Log("자식 애니메이터가 연결되지 않았습니다.");
+            }
+        }
     }
 
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))
-            anim.SetTrigger("FadeOut");
+        {
+            if (childTextAnimator != null)
+            {
+                childTextAnimator.SetTrigger("FadeOut");
+            }
+            else
+            {
+                Debug.Log("자식 애니메이터가 연결되지 않았습니다.");
+            }
+        }
     }
 
 }

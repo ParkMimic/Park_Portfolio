@@ -1,12 +1,16 @@
+using JetBrains.Annotations;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     public GameObject pauseMenu;
+    public GameObject guide;
+    public GameObject[] tutorialSteps;
 
     private bool isGameClear = false;
     private bool isPause = false;
     private bool isGameOver = false;
+    private bool isGuide = false;
 
     public static GameManager Instance { get; private set; }
 
@@ -15,7 +19,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -32,21 +35,26 @@ public class GameManager : MonoBehaviour
 
     void PauseMenu()
     {
-        if (Input.GetKeyDown(KeyCode.Escape) && !isGameOver)
+        if (Input.GetKeyDown(KeyCode.Escape) && !isGameOver && !isGuide)
         {
-            isPause = true;
-            pauseMenu.SetActive(true);
-            Time.timeScale = 0f;
-        }
-
-        if (isPause)
-        {
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (isPause)
             {
+                // 일시정지 해제
                 isPause = false;
                 pauseMenu.SetActive(false);
                 Time.timeScale = 1f;
             }
+            else
+            {
+                isPause = true;
+                pauseMenu.SetActive(true);
+                Time.timeScale = 0f;
+            }
+        }
+        else if (isGuide && Input.GetKeyDown(KeyCode.Escape))
+        {
+            isGuide = false;
+            guide.SetActive(false);
         }
     }
 
@@ -84,17 +92,24 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    #region Buttons
+    #region PauseMenu Buttons
     public void ResumeButton()
     {
-        pauseMenu.SetActive(false);
+        Debug.Log("버튼 입력 확인");
         Time.timeScale = 1f;
+        pauseMenu.SetActive(false);
         isPause = false;
     }
 
     public void GuideButton()
     {
-
+        guide.SetActive(true);
+        foreach (var step in tutorialSteps)
+        {
+            if (step == tutorialSteps[0]) step.SetActive(true);
+            else step.SetActive(false);
+        }
+        isGuide = true;
     }
 
     public void TitleButton()
