@@ -195,7 +195,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleJumpInput()
     {
-        if (jumpCount < 2 && Input.GetKeyDown(KeyCode.Z))
+        if (jumpCount < 2 && Input.GetKeyDown(KeyCode.Z) && !GameManager.Instance.isPause)
         {
             if (isWallSliding) isWallSliding = false;
             isGrounded = false;

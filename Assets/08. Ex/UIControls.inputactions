@@ -1,0 +1,34 @@
+{
+    "name": "UIControls",
+    "maps": [
+        {
+            "name": "UI",
+            "id": "97bff91c-afa4-4f30-bbcd-9e52a13b409b",
+            "actions": [
+                {
+                    "name": "New action",
+                    "type": "Button",
+                    "id": "f3c23b4e-700e-4b9f-aa4d-cd1f2f5c9909",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "1e8a847d-03f0-4382-a6c7-c009cd9b027a",
+                    "path": "",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "New action",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

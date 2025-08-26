@@ -73,7 +73,14 @@ public class GenericCutsceneTrigger : MonoBehaviour
                     {
                         Time.timeScale = 1f;
                     }
-                        break;
+                    break;
+
+                case ActionType.ActivateCollider:
+                    if (action.targetCollider != null)
+                    {
+                        action.targetCollider.GetComponent<Collider2D>().enabled = action.activationState;
+                    }
+                    break;
             }
         }
 

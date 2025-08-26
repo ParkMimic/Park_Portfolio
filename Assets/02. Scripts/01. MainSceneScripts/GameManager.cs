@@ -1,14 +1,17 @@
 using JetBrains.Annotations;
+using TMPro.EditorUtilities;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class GameManager : MonoBehaviour
 {
     public GameObject pauseMenu;
     public GameObject guide;
     public GameObject[] tutorialSteps;
+    private GameObject lastSelected;
 
     private bool isGameClear = false;
-    private bool isPause = false;
+    public bool isPause = false;
     private bool isGameOver = false;
     private bool isGuide = false;
 
@@ -31,6 +34,7 @@ public class GameManager : MonoBehaviour
         ButtonInput();
         GameClearBackToTitle();
         PauseMenu();
+        UIManagement();
     }
 
     void PauseMenu()
@@ -89,6 +93,23 @@ public class GameManager : MonoBehaviour
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene("00. Title");
             Time.timeScale = 1f;
+        }
+    }
+
+    void UIManagement()
+    {
+        if (EventSystem.current.currentSelectedGameObject == null)
+        {
+            // 선택이 풀렸다면 마지막 선택을 다시 세팅
+            if (lastSelected != null)
+            {
+                EventSystem.current.SetSelectedGameObject(lastSelected);
+            }
+        }
+        else
+        {
+            // 현재 선택된 오브젝트 기억해두기
+            lastSelected = EventSystem.current.currentSelectedGameObject;
         }
     }
 

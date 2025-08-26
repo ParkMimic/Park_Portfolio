@@ -12,7 +12,8 @@ public enum ActionType
     MovePlayer, // 플레이어 이동
     Wait, // 지정된 시간만큼 대기
     ActivateGameObject, // 게임 오브젝트 활성화/비활성화
-    PauseGame
+    PauseGame, // 게임 정지, 실행
+    ActivateCollider, // 오브젝트 콜라이더를 활성화/비활성화
 }
 
 /// <summary>
@@ -31,4 +32,6 @@ public class CutsceneAction
     public GameObject targetObject;
     public bool activationState;
     public bool pauseGame;
+    public GameObject targetCollider;
+    
 }
