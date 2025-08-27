@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     private bool isParrying = false;
     private bool isParryWindowActive; // 패링 윈도우 활성화 여부
     private bool wasParrySuccessful; // 패링 성공 여부
+    private bool isBlinking = false; // 블링크 효과 중복 실행 방지
 
     [Header("잔상 효과 설정")]
     [SerializeField] private GameObject ghostPrefab;
@@ -76,6 +77,7 @@ public class PlayerController : MonoBehaviour
     private float lastAttackTime;
     private int currentAttack;
     private int queuedAttackCount;
+    private float parryInvincibilityTimer;
 
     #endregion
 
@@ -159,6 +161,7 @@ public class PlayerController : MonoBehaviour
         if (parryCooldownTimer > 0) parryCooldownTimer -= Time.deltaTime;
         if (Time.time - lastAttackTime > comboResetTime) ResetAttackState();
         if (collisionCheckCooldown > 0) collisionCheckCooldown -= Time.deltaTime; // 쿨다운 감소
+        if (parryInvincibilityTimer > 0) parryInvincibilityTimer -= Time.deltaTime;
     }
 
     private void UpdateAnimator()
@@ -349,12 +352,14 @@ public class PlayerController : MonoBehaviour
 
         yield return new WaitForSeconds(parryDuration);
 
-        isParryWindowActive = false;
-        isParrying = false;
-        anim.SetBool("isParry", false); // 패링 애니메이션 종료
+        // 패링에 성공하지 않았을 경우(시간 초과)에만 상태를 리셋하고 쿨타임을 적용합니다.
+        // 성공 시에는 OnTriggerEnter2D에서 즉시 상태를 변경합니다.
         if (!wasParrySuccessful)
         {
-            parryCooldownTimer = parryCooldown; // 패링 실패 시 쿨타임 설정
+            isParryWindowActive = false;
+            isParrying = false;
+            anim.SetBool("isParry", false); // 패링 애니메이션 종료
+            parryCooldownTimer = parryCooldown;
         }
     }
 
@@ -412,6 +417,19 @@ public class PlayerController : MonoBehaviour
     {
         if (isParryWindowActive && collision.CompareTag("EnemyAttack"))
         {
+            // --- 패링 성공! ---
+            wasParrySuccessful = true; // 코루틴에 성공을 알려 쿨타임이 돌지 않게 함
+            if (!isBlinking) StartCoroutine(Blink());
+
+            // 즉시 다음 행동이 가능하도록 'isParrying' 상태와 애니메이션을 우선 해제합니다.
+            isParrying = false;
+            anim.SetBool("isParry", false);
+
+            // 패링 성공 직후의 짧은 무적시간을 부여하고, 패링 판정 창은 즉시 닫습니다.
+            parryInvincibilityTimer = 0.2f;
+            isParryWindowActive = false; // 무한 자동 패링 버그 수정
+
+            // 패링 성공 효과 (적 경직, 보스 그로기 등)를 여기서 처리합니다.
             MonsterController monster = collision.GetComponentInParent<MonsterController>();
             BossController boss = collision.GetComponentInParent<BossController>();
             if (monster != null)
@@ -423,23 +441,15 @@ public class PlayerController : MonoBehaviour
                 BossManager.Instance.TakeGroggyDamage(1);
             }
 
-            wasParrySuccessful = true; // 패링 성공!
-
-            StartCoroutine(Blink());
-
-            isParryWindowActive = false; // 성공했으므로 창을 바로 닫음
-            isParrying = false; // 패링 상태 종료
-            anim.SetBool("isParry", false); // 패링 애니메이션 종료
-            Debug.Log("패링 종료");
+            Debug.Log("패링 성공!");
             return; // 피격 처리를 막기 위해 여기서 함수 종료.
         }
 
         // collision.CompareTag("HitZone") || 
-        if ((collision.CompareTag("EnemyAttack")) && !wasParrySuccessful)
+        if (collision.CompareTag("EnemyAttack"))
         {
             Debug.Log("플레이어가 적의 공격에 맞았습니다.");
-            wasParrySuccessful = false; // 패링 실패
-            if (isHurt) return;
+            if (isHurt || parryInvincibilityTimer > 0) return;
             // 일반 피격
             Vector2 knockDirection = (transform.position.x < collision.transform.position.x) ? Vector2.left : Vector2.right;
             PlayerManager.Instance.TakeDamage(1, knockDirection);
@@ -482,18 +492,25 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Blink()
     {
+        isBlinking = true;
         SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
-        if (spriteRenderer == null) yield break;
+        if (spriteRenderer == null)
+        {
+            isBlinking = false;
+            yield break;
+        }
+
         Color originalColor = spriteRenderer.color;
         float blinkDuration = 0.3f;
         int blinkCount = 1;
         for (int i = 0; i < blinkCount; i++)
         {
-            spriteRenderer.color = new Color(0f, 196f, 255f);
+            spriteRenderer.color = new Color32(0, 196, 255, 255); // Color -> Color32로 수정 (0-255 범위)
             yield return new WaitForSeconds(blinkDuration / 2);
             spriteRenderer.color = originalColor; // 원래 색으로 돌아옴
             yield return new WaitForSeconds(blinkDuration / 2);
         }
+        isBlinking = false;
     }
 
     private void TriggerGameOver()
