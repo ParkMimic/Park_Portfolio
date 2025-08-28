@@ -187,7 +187,7 @@ public class PlayerController : MonoBehaviour
         {
             rigid.linearVelocity = new Vector2(0, Mathf.Max(rigid.linearVelocity.y, -wallSlideSpeed));
         }
-        else
+        else if (!isAttacking)
         {
             rigid.linearVelocity = new Vector2(moveInput * moveSpeed, rigid.linearVelocity.y);
             if (moveInput != 0) transform.localScale = new Vector3(moveInput, 1, 1);

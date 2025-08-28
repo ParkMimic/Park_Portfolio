@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Cinemachine;
+using Unity.Hierarchy;
 
 public class BossManager : MonoBehaviour
 {
@@ -15,15 +16,16 @@ public class BossManager : MonoBehaviour
 
     // 체력 변경 시 호출될 이벤트
     public static event System.Action<int, int> OnHealthChanged;
+    public static event System.Action<float, float> OnGroggyChanged;
 
     [Header("체력 설정")]
     [SerializeField] private int hp;
     public int maxHp = 30;
 
     [Header("그로기/기절 설정")]
-    public float maxGroggy = 10f;       // 기절에 필요한 총 그로기 수치
+    public float maxGroggy = 10;       // 기절에 필요한 총 그로기 수치
     public float stunDuration = 5f;      // 기절 지속 시간
-    private float currentGroggy = 0f;    // 현재 그로기 수치
+    [SerializeField] private float currentGroggy = 0;    // 현재 그로기 수치
 
     [Header("보스 사망 시, 열릴 문")]
     public List<DoorScript> doorToOpen = new List<DoorScript>();
@@ -45,6 +47,15 @@ public class BossManager : MonoBehaviour
         }
     }
 
+    public float GROGGY
+    {
+        get => currentGroggy;
+        private set
+        {
+            currentGroggy = Mathf.Clamp(currentGroggy, 0, maxGroggy);
+        }
+    }
+
     private void Awake()
     {
         if (Instance == null)
@@ -61,10 +72,11 @@ public class BossManager : MonoBehaviour
     {
         boss = GetComponent<BossController>();
         hp = maxHp;
-        currentGroggy = 0;
+        currentGroggy = maxGroggy;
 
         // UI의 초기 체력 값을 설정하기 위해 이벤트를 호출합니다.
         OnHealthChanged?.Invoke(hp, maxHp);
+        OnGroggyChanged?.Invoke(currentGroggy, maxGroggy);
     }
 
     #endregion
@@ -99,8 +111,10 @@ public class BossManager : MonoBehaviour
     {
         if (hp <= 0) return; // 이미 죽은 상태면 리턴
 
-        currentGroggy += amount;
-        if (currentGroggy >= maxGroggy)
+        currentGroggy -= amount;
+        OnGroggyChanged?.Invoke(currentGroggy, maxGroggy);
+
+        if (currentGroggy <= 0)
         {
             StartCoroutine(StunSequence());
         }
@@ -137,7 +151,7 @@ public class BossManager : MonoBehaviour
     private IEnumerator StunSequence()
     {
         Debug.Log("Boss is stunned!");
-        currentGroggy = 0;
+        currentGroggy = maxGroggy;
         boss.SetState(BossController.BossState.Stunned);
 
         yield return new WaitForSeconds(stunDuration);

@@ -117,6 +117,7 @@ public class BossController : MonoBehaviour
         // 상태에 따라 특정 로직을 처리
         if (CurrentState == BossState.Stunned || CurrentState == BossState.Dead)
         {
+            DisableMeleeHitbox(); // 만약 공격 중에 상태가 바뀌면 hitbox를 비활성화시킵니다.
             anim.SetBool("isWalking", false);
             rigid.linearVelocity = Vector2.zero;
         }

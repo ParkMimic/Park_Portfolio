@@ -1,80 +1,86 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class MonsterController : MonoBehaviour
 {
-    #region º¯¼ö ¼±¾ğ (Fields & Properties)
+    #region ë³€ìˆ˜ ì„ ì–¸ (Fields & Properties)
 
-    [Header("±âº» ¼³Á¤")]
+    [Header("ê¸°ë³¸ ì„¤ì •")]
     public float moveSpeed = 2f;
     public float maxHealth = 3;
     [SerializeField] private float currentHealth;
 
-    [Header("°ø°İ ¼³Á¤")]
-    public int contactDamage = 1; // Á¢ÃË ½Ã µ¥¹ÌÁö
-    public int attackDamage = 1; // Ä® °ø°İ µ¥¹ÌÁö
-    public float attackRange = 3f; // ÀÌ °Å¸® ¾È¿¡ µé¾î¿À¸é °ø°İ ½ÃÀÛ
-    public float attackCooldown = 2f; // ÇÑ ¹ø °ø°İ ÈÄ ´ÙÀ½ °ø°İ±îÁöÀÇ ÃÖ¼Ò ½Ã°£
-    public float pauseBeforeAttackTime = 0.2f; // °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç ½ÃÀÛ ÈÄ °ø°İ ÆÇÁ¤±îÁöÀÇ ½Ã°£
-    public float attackDelay = 0.4f; // °ø°İ ÆÇÁ¤ Áö¼Ó½Ã°£
-    [SerializeField] private GameObject attackHitboxObject; // °ø°İ È÷Æ®¹Ú½º
+    [Header("ê³µê²© ê´€ë ¨")]
+    //public int contactDamage = 1; // ì ‘ì´‰ ì‹œ ë°ë¯¸ì§€
+    public int attackDamage = 1; // ê³µê²© ë°ë¯¸ì§€
+    public float attackRange = 3f; // ê³µê²© ì‚¬ì •ê±°ë¦¬
+    public float attackCooldown = 2f; // ê³µê²© ì¿¨ë‹¤ìš´
+    public float postAttackDelay = 0.5f; // ê³µê²© í›„ ë”œë ˆì´
+    [SerializeField] private GameObject attackHitboxObject; // ê³µê²© íˆíŠ¸ë°•ìŠ¤ ì˜¤ë¸Œì íŠ¸
 
-    [Header("ÆĞ¸µ ¼³Á¤")]
-    public float parryFlashDuration = 0.1f; // ÆĞ¸µ °¡´É Å¸ÀÌ¹Ö¿¡ ¹øÂ½ÀÌ´Â ½Ã°£
+    [Header("íŒ¨ë§ ê´€ë ¨")]
+    public float parryFlashDuration = 0.1f; // íŒ¨ë§ ì„±ê³µ ì‹œ ë°˜ì§ì´ëŠ” ì‹œê°„
 
-    [Header("ÇÇ°İ ¼³Á¤")]
-    public float hurtDuration = 0.5f; // ÇÇ°İ ÈÄ ¹«Àû½Ã°£
-    public float hurtForce = 5f; // ÇÇ°İ ½Ã ¹Ğ·Á³ª´Â Èû
+    [Header("í”¼ê²© ê´€ë ¨")]
+    public float hurtDuration = 0.5f; // í”¼ê²© ìƒíƒœ ì§€ì† ì‹œê°„
+    public float hurtForce = 5f; // í”¼ê²© ì‹œ ë°€ë ¤ë‚˜ëŠ” í˜
 
-    [Header("±×·Î±â/±âÀı ¼³Á¤")]
-    public float maxGroggy = 1f; // ÃÖ´ë ±×·Î±â ¼öÄ¡
-    [SerializeField] private float currentGroggy; // ÇöÀç ±×·Î±â ¼öÄ¡
-    public float stunDuration = 2f; // ±âÀı Áö¼Ó ½Ã°£
-    private bool isStunned = false; // ±âÀı »óÅÂ ¿©ºÎ
+    [Header("ê·¸ë¡œê¸°/ìŠ¤í„´ ê´€ë ¨")]
+    public float maxGroggy = 1f; // ìµœëŒ€ ê·¸ë¡œê¸° ìˆ˜ì¹˜
+    [SerializeField] private float currentGroggy; // í˜„ì¬ ê·¸ë¡œê¸° ìˆ˜ì¹˜
+    public float stunDuration = 2f; // ìŠ¤í„´ ì§€ì† ì‹œê°„
+    private bool isStunned = false; // ìŠ¤í„´ ìƒíƒœ ì—¬ë¶€
 
-    [Header("°¨Áö ¼³Á¤")]
-    public Transform player; // ÇÃ·¹ÀÌ¾î Transform
-    public LayerMask sightLayerMask; // ÇÃ·¹ÀÌ¾î¸¦ °¨ÁöÇÒ ·¹ÀÌ¾î
+    [Header("íƒ€ê²Ÿ ì„¤ì •")]
+    public Transform player; // í”Œë ˆì´ì–´ Transform
+    public LayerMask sightLayerMask; // ì‹œì•¼ ê°ì§€ ë ˆì´ì–´
 
-    [Header("½Ã¾ß ¼³Á¤")]
-    public float visionRange = 10f; // ÇÃ·¹ÀÌ¾î¸¦ ¹ß°ßÇÒ ¼ö ÀÖ´Â ÃÖ´ë °Å¸®
-    public float loseSightDistance = 15f; // ÇÃ·¹ÀÌ¾î°¡ ÀÌ °Å¸® ÀÌ»ó ¹ş¾î³ª¸é ½Ã¾ß¸¦ ÀÒÀ½
-    private bool hasSpottedPlayer = false; // ÇÃ·¹ÀÌ¾î¸¦ ¹ß°ßÇß´ÂÁö ¿©ºÎ
+    [Header("ì‹œì•¼ ì„¤ì •")]
+    public float visionRange = 10f; // í”Œë ˆì´ì–´ë¥¼ ë°œê²¬í•  ìˆ˜ ìˆëŠ” ìµœëŒ€ ê±°ë¦¬
+    public float loseSightDistance = 15f; // í”Œë ˆì´ì–´ê°€ ì´ ê±°ë¦¬ ì´ìƒ ë²—ì–´ë‚˜ë©´ ì‹œì•¼ë¥¼ ìƒìŒ
+    private bool hasSpottedPlayer = false; // í”Œë ˆì´ì–´ ë°œê²¬ ì—¬ë¶€
 
-    // ÄÄÆ÷³ÍÆ® º¯¼ö
+    // ì»´í¬ë„ŒíŠ¸ ì°¸ì¡°
     private Rigidbody2D rigid;
     private SpriteRenderer spriteRenderer;
     private Animator anim;
     private Color originalColor;
     private BoxCollider2D hitBox;
+    private WaitForSeconds shortWait;
 
-    // »óÅÂ(State) º¯¼ö
+    // ìƒíƒœ ë³€ìˆ˜
     private bool isAttacking = false;
     private bool isDead = false;
     private bool isHurt = false;
 
-    // ³»ºÎ ·ÎÁ÷ º¯¼ö
+    // ê³µê²© ì‹œê°„ ì œì–´
     private float lastAttackTime;
 
     #endregion
 
-    #region ±âº» ÇÔ¼ö (Unity Lifecycle)
+    #region ê¸°ë³¸ í•¨ìˆ˜ (Unity Lifecycle)
 
     private void Awake()
     {
+        // ì»´í¬ë„ŒíŠ¸ ì´ˆê¸°í™”
         rigid = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         anim = GetComponent<Animator>();
 
+        // ë³€ìˆ˜ ì´ˆê¸°í™”
         currentHealth = maxHealth;
         currentGroggy = 0;
-        lastAttackTime = -attackCooldown; // ½ÃÀÛÇÏÀÚ¸¶ÀÚ °ø°İÇÒ ¼ö ÀÖµµ·Ï
+        lastAttackTime = -attackCooldown; // ê²Œì„ ì‹œì‘ ì‹œ ë°”ë¡œ ê³µê²© ê°€ëŠ¥í•˜ë„ë¡
         originalColor = spriteRenderer.color;
 
+        // íˆíŠ¸ë°•ìŠ¤ ì´ˆê¸°í™”
         hitBox = attackHitboxObject.GetComponent<BoxCollider2D>();
-        hitBox.enabled = false; // °ø°İ È÷Æ®¹Ú½º ºñÈ°¼ºÈ­
+        hitBox.enabled = false; // ì‹œì‘ ì‹œ ê³µê²© íˆíŠ¸ë°•ìŠ¤ ë¹„í™œì„±í™”
 
+        // WaitForSeconds ì €ì¥ìš©
+        shortWait = new WaitForSeconds(0.1f);
 
+        // í”Œë ˆì´ì–´ ìë™ ì°¾ê¸°
         if (player == null)
         {
             GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
@@ -84,14 +90,15 @@ public class MonsterController : MonoBehaviour
             }
             else
             {
-                Debug.LogError("ÇÃ·¹ÀÌ¾î ¿ÀºêÁ§Æ®¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù. 'Player' ÅÂ±×¸¦ È®ÀÎÇØÁÖ¼¼¿ä.");
-                enabled = false;
+                Debug.LogError("í”Œë ˆì´ì–´ ì˜¤ë¸Œì íŠ¸ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤. 'Player' íƒœê·¸ë¥¼ í™•ì¸í•´ì£¼ì„¸ìš”.");
+                enabled = false; // ì»´í¬ë„ŒíŠ¸ ë¹„í™œì„±í™”
             }
         }
     }
 
     private void Update()
     {
+        // ì£½ê±°ë‚˜, ìŠ¤í„´ ìƒíƒœê±°ë‚˜, í”Œë ˆì´ì–´ê°€ ì—†ìœ¼ë©´ í–‰ë™ ì •ì§€
         if (isDead || isStunned || player == null || PlayerManager.Instance.HP <= 0) return;
 
         HandlePlayerDetection();
@@ -101,12 +108,13 @@ public class MonsterController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // ë¬¼ë¦¬ ê¸°ë°˜ ì´ë™ ì²˜ë¦¬
         HandleMovement();
     }
 
     #endregion
 
-    #region ·ÎÁ÷ (Logic)
+    #region ë¡œì§ (Logic)
 
     private void HandlePlayerDetection()
     {
@@ -116,6 +124,7 @@ public class MonsterController : MonoBehaviour
         }
         else
         {
+            // í”Œë ˆì´ì–´ë¥¼ ë†“ì³¤ëŠ”ì§€ í™•ì¸
             float distanceToPlayer = Vector2.Distance(transform.position, player.position);
             if (distanceToPlayer > loseSightDistance)
             {
@@ -126,13 +135,17 @@ public class MonsterController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (isDead || isHurt || isAttacking || isStunned || !hasSpottedPlayer || Vector2.Distance(transform.position, player.position) <= attackRange)
+        if (isHurt || isDead) return; // í”¼ê²© ìƒíƒœì¼ ë•ŒëŠ” ì´ë™í•˜ì§€ ì•ŠìŒ
+
+        // í–‰ë™ ì •ì§€ ì¡°ê±´: ì£½ìŒ,, ê³µê²©, ìŠ¤í„´, í”Œë ˆì´ì–´ ë¯¸ë°œê²¬, ê³µê²© ë²”ìœ„ ë‚´ ì§„ì…
+        if (isAttacking || isStunned || !hasSpottedPlayer || Vector2.Distance(transform.position, player.position) <= attackRange)
         {
             rigid.linearVelocity = new Vector2(0, rigid.linearVelocity.y);
             anim.SetBool("isWalking", false);
             return;
         }
 
+        // í”Œë ˆì´ì–´ ë°©í–¥ìœ¼ë¡œ ì´ë™
         Vector2 direction = (player.position - transform.position).normalized;
         rigid.linearVelocity = new Vector2(direction.x * moveSpeed, rigid.linearVelocity.y);
         anim.SetBool("isWalking", true);
@@ -140,49 +153,45 @@ public class MonsterController : MonoBehaviour
 
     private void HandleSpriteFlip()
     {
+        // ê³µê²© ì¤‘ì´ ì•„ë‹ ë•Œë§Œ í”Œë ˆì´ì–´ë¥¼ ë°”ë¼ë³´ë„ë¡ ë°©í–¥ ì „í™˜
         if (!isAttacking && hasSpottedPlayer)
         {
             if (player.position.x < transform.position.x)
             {
-                transform.localScale = new Vector3(1, 1, 1);
+                transform.localScale = new Vector3(1, 1, 1); // ì™¼ìª½ ë³´ê¸°
             }
             else
             {
-                transform.localScale = new Vector3(-1, 1, 1);
+                transform.localScale = new Vector3(-1, 1, 1); // ì˜¤ë¥¸ìª½ ë³´ê¸°
             }
         }
     }
 
     private void CheckForPlayerInSight()
     {
+        // ëª¬ìŠ¤í„°ê°€ ë°”ë¼ë³´ëŠ” ë°©í–¥ìœ¼ë¡œ Raycast ë°œì‚¬í•˜ì—¬ í”Œë ˆì´ì–´ ê°ì§€
         Vector2 direction = transform.localScale.x > 0 ? Vector2.left : Vector2.right;
         Vector2 raycastOrigin = (Vector2)transform.position + new Vector2(0, 1f);
         RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, direction, visionRange, sightLayerMask);
 
         Debug.DrawRay(raycastOrigin, direction * visionRange, Color.red);
 
-        if (hit.collider != null)
+        if (hit.collider != null && hit.collider.CompareTag("Player"))
         {
-            if (hit.collider.CompareTag("Player"))
-            {
-                hasSpottedPlayer = true;
-            }
-        }
-        else
-        {
-            hasSpottedPlayer = false;
+            hasSpottedPlayer = true;
         }
     }
 
     #endregion
 
-    #region °ø°İ (Attack)
+    #region ê³µê²© (Attack)
 
     private void HandleAttacking()
     {
         if (!hasSpottedPlayer || isAttacking) return;
 
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
+        // ê³µê²© ì¿¨ë‹¤ìš´ì´ ì§€ë‚¬ê³ , í”Œë ˆì´ì–´ê°€ ê³µê²© ë²”ìœ„ ì•ˆì— ìˆì„ ë•Œ ê³µê²©
         if (Time.time >= lastAttackTime + attackCooldown && distanceToPlayer <= attackRange)
         {
             lastAttackTime = Time.time;
@@ -190,7 +199,7 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // Animation Event·Î È£ÃâµÉ ÇÔ¼ö: ÆĞ¸µ Å¸ÀÌ¹Ö ½Ã°¢ È¿°ú
+    // ì• ë‹ˆë©”ì´ì…˜ ì´ë²¤íŠ¸ë¡œ í˜¸ì¶œë  í•¨ìˆ˜: íŒ¨ë§ íƒ€ì´ë° íš¨ê³¼
     public void TriggerParryFlash()
     {
         StartCoroutine(ParryFlashEffect());
@@ -198,12 +207,13 @@ public class MonsterController : MonoBehaviour
 
     #endregion
 
-    #region ÇÇ°İ ¹× Ã¼·Â (Damage & Health)
+    #region í”¼ê²© ë° ì²´ë ¥ (Damage & Health)
 
     public void TakeDamage(float damage, Vector2 knockbackDirection)
     {
         if (isDead) return;
 
+        // ìŠ¤í„´ ìƒíƒœì¼ ê²½ìš° ë°ë¯¸ì§€ 3ë°°
         float finalDamage = isStunned ? damage * 3 : damage;
         currentHealth -= finalDamage;
 
@@ -234,19 +244,18 @@ public class MonsterController : MonoBehaviour
         anim.SetTrigger("isDead");
         rigid.linearVelocity = Vector2.zero;
         rigid.angularVelocity = 0f;
-        rigid.bodyType = RigidbodyType2D.Kinematic;
+        rigid.bodyType = RigidbodyType2D.Kinematic; // ë¬¼ë¦¬ íš¨ê³¼ ì •ì§€
     }
 
     #endregion
 
-    #region ÄÚ·çÆ¾ (Coroutines)
+    #region ì½”ë£¨í‹´ (Coroutines)
 
     private IEnumerator AttackSequence()
     {
         isAttacking = true;
         anim.SetTrigger("Attack");
-
-        yield return null;
+        yield return null; // ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€ ëŒ€ê¸°
     }
 
     private IEnumerator StunSequence()
@@ -254,30 +263,38 @@ public class MonsterController : MonoBehaviour
         isStunned = true;
         isHurt = false;
         currentGroggy = 0;
-        FinishAttack();
+
+        // ê³µê²© ì¤‘ì´ì—ˆë‹¤ë©´ ê³µê²© ìƒíƒœ ê°•ì œ ì¢…ë£Œ
+        isAttacking = false;
         anim.ResetTrigger("Attack");
 
         anim.SetTrigger("Stunned");
+
+        // TimeManagerì—ê²Œ ìŠ¬ë¡œìš° ëª¨ì…˜ì„ ìš”ì²­
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.RequestSlowMotion(0.2f, 0.4f);
+        }
+
         spriteRenderer.color = Color.yellow;
-        hitBox.enabled = false; // ±âÀı ½Ã °ø°İ È÷Æ®¹Ú½º ºñÈ°¼ºÈ­
+        hitBox.enabled = false; // ìŠ¤í„´ ì‹œ ê³µê²© íˆíŠ¸ë°•ìŠ¤ ë¹„í™œì„±í™”
 
         yield return new WaitForSeconds(stunDuration);
 
         isStunned = false;
         spriteRenderer.color = originalColor;
-        currentGroggy = maxGroggy; // ±âÀı ÈÄ ±×·Î±â ¼öÄ¡ ÃÊ±âÈ­
     }
 
     private IEnumerator HurtSequence(Vector2 knockbackDirection)
     {
         isHurt = true;
-        isAttacking = false;
+        isAttacking = false; // í”¼ê²© ì‹œ ê³µê²© ì¤‘ë‹¨
         anim.ResetTrigger("Attack");
         spriteRenderer.color = Color.white;
-        rigid.AddForce(knockbackDirection * hurtForce, ForceMode2D.Impulse);
+        rigid.AddForce(new Vector2(knockbackDirection.x, 0) * hurtForce, ForceMode2D.Impulse);
 
         anim.SetTrigger("isHurt");
-        yield return new WaitForSeconds(0.1f);
+        yield return shortWait;
         spriteRenderer.color = originalColor;
 
         yield return new WaitForSeconds(hurtDuration);
@@ -294,18 +311,18 @@ public class MonsterController : MonoBehaviour
 
     #endregion
 
-    #region ¾Ö´Ï¸ŞÀÌ¼Ç ÀÌº¥Æ® (Animation Events)
+    #region ì• ë‹ˆë©”ì´ì…˜ ì´ë²¤íŠ¸ (Animation Events)
 
-    // °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ Æ¯Á¤ ÇÁ·¹ÀÓ¿¡¼­ È£Ãâ
+    // ê³µê²© ì• ë‹ˆë©”ì´ì…˜ì˜ íŠ¹ì • í”„ë ˆì„ì—ì„œ í˜¸ì¶œ (íˆíŠ¸ë°•ìŠ¤ í™œì„±í™”)
     public void ActivateAttackHitbox()
     {
-        if (attackHitboxObject != null) 
+        if (attackHitboxObject != null)
         {
             hitBox.enabled = true;
-        } 
+        }
     }
 
-    // °ø°İ ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ ´Ù¸¥ ÇÁ·¹ÀÓ¿¡¼­ È£Ãâ
+    // ê³µê²© ì• ë‹ˆë©”ì´ì…˜ì˜ ë‹¤ë¥¸ í”„ë ˆì„ì—ì„œ í˜¸ì¶œ (íˆíŠ¸ë°•ìŠ¤ ë¹„í™œì„±í™”)
     public void DeactivateAttackHitbox()
     {
         if (attackHitboxObject != null)
@@ -314,13 +331,19 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // Animation Event·Î È£ÃâµÉ ÇÔ¼ö
+    // ê³µê²© ì• ë‹ˆë©”ì´ì…˜ ì¢…ë£Œ ì‹œ í˜¸ì¶œ
     public void FinishAttack()
     {
+        StartCoroutine(PostAttackDelaySequence());
+    }
+
+    private IEnumerator PostAttackDelaySequence()
+    {
+        yield return new WaitForSeconds(postAttackDelay);
         isAttacking = false;
     }
 
-    // Á×´Â ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ³¡³¯ ¶§ È£Ãâ
+    // ì£½ëŠ” ì• ë‹ˆë©”ì´ì…˜ ì¢…ë£Œ ì‹œ í˜¸ì¶œ (ì½œë¼ì´ë” ë¹„í™œì„±í™”)
     public void DisableMonsterCollider()
     {
         Collider2D monsterCollider = GetComponent<Collider2D>();
@@ -330,7 +353,7 @@ public class MonsterController : MonoBehaviour
         }
     }
 
-    // DisableMonsterCollider ÀÌÈÄ È£Ãâ
+    // ì½œë¼ì´ë” ë¹„í™œì„±í™” í›„ í˜¸ì¶œ (ì˜¤ë¸Œì íŠ¸ íŒŒê´´)
     public void DestroyMonster()
     {
         Destroy(gameObject);
