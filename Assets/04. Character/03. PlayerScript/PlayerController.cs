@@ -1,5 +1,6 @@
 using JetBrains.Annotations;
 using System.Collections;
+using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -31,6 +32,9 @@ public class PlayerController : MonoBehaviour
     private bool isParryWindowActive; // 패링 윈도우 활성화 여부
     private bool wasParrySuccessful; // 패링 성공 여부
     private bool isBlinking = false; // 블링크 효과 중복 실행 방지
+    public float parryKnockbackPower = 15f;
+    public float parryKnockbackDuration = 0.3f;
+    private Coroutine parryCoroutine;
 
     [Header("잔상 효과 설정")]
     [SerializeField] private GameObject ghostPrefab;
@@ -149,9 +153,9 @@ public class PlayerController : MonoBehaviour
             HandleJumpInput();
         }
 
-        if (Input.GetKeyDown(KeyCode.C) && !isAttacking && !isDashing && !isParrying && parryCooldownTimer <= 0)
+        if (Input.GetKeyDown(KeyCode.C) && parryCoroutine == null && !isAttacking && !isDashing && parryCooldownTimer <= 0)
         {
-            StartCoroutine(Parry());
+            parryCoroutine = StartCoroutine(Parry());
         }
     }
 
@@ -344,23 +348,27 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator Parry()
     {
-        isParryWindowActive = true;
         isParrying = true;
+        isParryWindowActive = true;
         wasParrySuccessful = false;
-        anim.SetTrigger("Parry"); // 패링 애니메이션 실행
+        anim.SetTrigger("Parry");
         anim.SetBool("isParry", true);
 
         yield return new WaitForSeconds(parryDuration);
 
-        // 패링에 성공하지 않았을 경우(시간 초과)에만 상태를 리셋하고 쿨타임을 적용합니다.
-        // 성공 시에는 OnTriggerEnter2D에서 즉시 상태를 변경합니다.
         if (!wasParrySuccessful)
         {
-            isParryWindowActive = false;
-            isParrying = false;
-            anim.SetBool("isParry", false); // 패링 애니메이션 종료
             parryCooldownTimer = parryCooldown;
+            ResetParryState(); // 실패 시 상태 초기화
         }
+    }
+
+    private void ResetParryState()
+    {
+        isParryWindowActive = false;
+        isParrying = false;
+        anim.SetBool("isParry", false);
+        parryCoroutine = null;
     }
 
     #endregion
@@ -419,15 +427,12 @@ public class PlayerController : MonoBehaviour
         {
             // --- 패링 성공! ---
             wasParrySuccessful = true; // 코루틴에 성공을 알려 쿨타임이 돌지 않게 함
+
+            ResetParryState();
+
             if (!isBlinking) StartCoroutine(Blink());
 
-            // 즉시 다음 행동이 가능하도록 'isParrying' 상태와 애니메이션을 우선 해제합니다.
-            isParrying = false;
-            anim.SetBool("isParry", false);
-
-            // 패링 성공 직후의 짧은 무적시간을 부여하고, 패링 판정 창은 즉시 닫습니다.
-            parryInvincibilityTimer = 0.2f;
-            isParryWindowActive = false; // 무한 자동 패링 버그 수정
+            parryInvincibilityTimer = 0.5f;
 
             // 패링 성공 효과 (적 경직, 보스 그로기 등)를 여기서 처리합니다.
             MonsterController monster = collision.GetComponentInParent<MonsterController>();
@@ -435,10 +440,12 @@ public class PlayerController : MonoBehaviour
             if (monster != null)
             {
                 monster.TakeGroggyDamage(1);
+                Vector2 knockbackDirection = (monster.transform.position - transform.position).normalized;
+                monster.StartCoroutine(monster.Knockback(knockbackDirection, parryKnockbackPower, parryKnockbackDuration));
             }
             else if (boss != null)
             {
-                BossManager.Instance.TakeGroggyDamage(1);
+                BossManager.Instance.TakeGroggyDamage(1, transform.position);
             }
 
             Debug.Log("패링 성공!");

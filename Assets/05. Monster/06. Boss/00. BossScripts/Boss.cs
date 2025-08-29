@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class Boss_2 : MonoBehaviour
+public class Boss : MonoBehaviour
 {
     #region 상태 열거형 (State Enum)
     public enum BossState { Chasing, Attacking, Stunned, Dead }

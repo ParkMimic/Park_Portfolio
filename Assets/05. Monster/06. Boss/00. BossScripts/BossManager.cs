@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using Unity.Hierarchy;
+using System.Diagnostics;
 
 public class BossManager : MonoBehaviour
 {
@@ -78,7 +79,6 @@ public class BossManager : MonoBehaviour
         OnHealthChanged?.Invoke(hp, maxHp);
         OnGroggyChanged?.Invoke(currentGroggy, maxGroggy);
     }
-
     #endregion
 
     #region Public Methods
@@ -107,16 +107,23 @@ public class BossManager : MonoBehaviour
     }
 
     // 그로기 수치를 받는 함수
-    public void TakeGroggyDamage(float amount)
+    public void TakeGroggyDamage(float amount, Vector2 attackOriginPosition)
     {
         if (hp <= 0) return; // 이미 죽은 상태면 리턴
+
+        bool wasAlreadyStunned = (boss.CurrentState == BossController.BossState.Stunned);
 
         currentGroggy -= amount;
         OnGroggyChanged?.Invoke(currentGroggy, maxGroggy);
 
-        if (currentGroggy <= 0)
+        if (!wasAlreadyStunned && currentGroggy <= 0)
         {
             StartCoroutine(StunSequence());
+            boss.TakeDamage(attackOriginPosition);
+        }
+        else if (wasAlreadyStunned)
+        {
+            boss.TakeDamage(attackOriginPosition);
         }
     }
 
@@ -126,7 +133,6 @@ public class BossManager : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log("Boss has died.");
         boss.SetState(BossController.BossState.Dead);
 
         // 보스 사망 컷신 실행
@@ -150,9 +156,13 @@ public class BossManager : MonoBehaviour
 
     private IEnumerator StunSequence()
     {
-        Debug.Log("Boss is stunned!");
         currentGroggy = maxGroggy;
         boss.SetState(BossController.BossState.Stunned);
+
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.RequestSlowMotion(0.8f, 0.1f);
+        }
 
         yield return new WaitForSeconds(stunDuration);
 
@@ -160,7 +170,6 @@ public class BossManager : MonoBehaviour
         // (다른 상태에 의해 변경된 경우 덮어쓰지 않기 위함)
         if (boss.CurrentState == BossController.BossState.Stunned)
         {
-            Debug.Log("Boss stun has ended.");
             boss.SetState(BossController.BossState.Idle);
         }
     }

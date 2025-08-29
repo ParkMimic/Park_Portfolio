@@ -25,6 +25,10 @@ public class MonsterController : MonoBehaviour
     public float hurtDuration = 0.5f; // 피격 상태 지속 시간
     public float hurtForce = 5f; // 피격 시 밀려나는 힘
 
+    [Header("넉백 강도")]
+    public float stunKnockbackPower = 10f;
+    public float stunKnockbackDuration = 0.5f;
+
     [Header("그로기/스턴 관련")]
     public float maxGroggy = 1f; // 최대 그로기 수치
     [SerializeField] private float currentGroggy; // 현재 그로기 수치
@@ -52,6 +56,7 @@ public class MonsterController : MonoBehaviour
     private bool isAttacking = false;
     private bool isDead = false;
     private bool isHurt = false;
+    private bool isKnockedback = false;
 
     // 공격 시간 제어
     private float lastAttackTime;
@@ -135,7 +140,7 @@ public class MonsterController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (isHurt || isDead) return; // 피격 상태일 때는 이동하지 않음
+        if (isKnockedback || isHurt || isDead) return; // 피격 상태일 때는 이동하지 않음
 
         // 행동 정지 조건: 죽음,, 공격, 스턴, 플레이어 미발견, 공격 범위 내 진입
         if (isAttacking || isStunned || !hasSpottedPlayer || Vector2.Distance(transform.position, player.position) <= attackRange)
@@ -213,15 +218,21 @@ public class MonsterController : MonoBehaviour
     {
         if (isDead) return;
 
-        // 스턴 상태일 경우 데미지 3배
         float finalDamage = isStunned ? damage * 3 : damage;
         currentHealth -= finalDamage;
 
         if (currentHealth <= 0)
         {
             Die();
+            return; // 죽었으면 아래 피격/넉백 처리를 할 필요가 없으므로 즉시 함수 종료
         }
-        else if (!isStunned)
+
+        if (isStunned)
+        {
+
+            StartCoroutine(Knockback(knockbackDirection, stunKnockbackPower, stunKnockbackDuration));
+        }
+        else
         {
             StartCoroutine(HurtSequence(knockbackDirection));
         }
@@ -241,6 +252,7 @@ public class MonsterController : MonoBehaviour
     private void Die()
     {
         isDead = true;
+        StopAllCoroutines(); // 진행 중인 모든 코루틴 중지
         anim.SetTrigger("isDead");
         rigid.linearVelocity = Vector2.zero;
         rigid.angularVelocity = 0f;
@@ -273,7 +285,7 @@ public class MonsterController : MonoBehaviour
         // TimeManager에게 슬로우 모션을 요청
         if (TimeManager.Instance != null)
         {
-            TimeManager.Instance.RequestSlowMotion(0.2f, 0.4f);
+            TimeManager.Instance.RequestSlowMotion(0.5f, 0.1f);
         }
 
         spriteRenderer.color = Color.yellow;
@@ -291,6 +303,8 @@ public class MonsterController : MonoBehaviour
         isAttacking = false; // 피격 시 공격 중단
         anim.ResetTrigger("Attack");
         spriteRenderer.color = Color.white;
+
+        StartCoroutine(Knockback(knockbackDirection, hurtForce, hurtDuration));
         rigid.AddForce(new Vector2(knockbackDirection.x, 0) * hurtForce, ForceMode2D.Impulse);
 
         anim.SetTrigger("isHurt");
@@ -300,6 +314,26 @@ public class MonsterController : MonoBehaviour
         yield return new WaitForSeconds(hurtDuration);
 
         isHurt = false;
+    }
+
+    public IEnumerator Knockback(Vector2 direction, float power, float duration)
+    {
+        isKnockedback = true;
+
+        rigid.linearVelocity = Vector2.zero;
+
+        Vector2 forceToApply = new Vector2(direction.x, 0).normalized * power;
+        rigid.AddForce(new Vector2(direction.x ,0).normalized * power, ForceMode2D.Impulse);
+
+        float timer = 0;
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        rigid.linearVelocity = Vector2.zero;
+        isKnockedback = false;
     }
 
     private IEnumerator ParryFlashEffect()

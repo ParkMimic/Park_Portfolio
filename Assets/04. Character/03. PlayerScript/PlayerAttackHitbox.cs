@@ -10,7 +10,10 @@ public class PlayerAttackHitbox : MonoBehaviour
     {
         // 중복 타격을 방지하기 위한 리스트 초기화
         hittedColliders = new List<Collider2D>();
+    }
 
+    private void Start()
+    {
         // PlayerManager가 없을 경우에 대한 예외 처리
         if (PlayerManager.Instance == null)
         {

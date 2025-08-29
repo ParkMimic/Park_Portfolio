@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -78,6 +79,10 @@ public class BossController : MonoBehaviour
     private bool isAttackFinished = false;
     private AttackAction currentAction; // 현재 실행 중인 액션을 기억할 변수
 
+    [Header("넉백 설정")]
+    public float stunKnockbackPower = 20f;
+    public float stunKnockbackDuration = 0.1f;
+    private bool isKnockedBack = false;
     #endregion
 
     #region Unity Lifecycle Methods
@@ -136,6 +141,14 @@ public class BossController : MonoBehaviour
     #endregion
 
     #region Core AI Logic
+    public void TakeDamage(Vector2 attackOriginPosition)
+    {
+        if (CurrentState== BossState.Stunned)
+        {
+            Vector2 knockbackDirection = ((Vector2)transform.position - attackOriginPosition).normalized;
+            StartCoroutine(Knockback(knockbackDirection, stunKnockbackPower, stunKnockbackDuration));
+        }
+    }
 
     void DecideNextAction()
     {
@@ -163,6 +176,8 @@ public class BossController : MonoBehaviour
 
     void MoveTowardsPlayer()
     {
+        if (isKnockedBack) return;
+
         float direction = Mathf.Sign(playerTransform.position.x - transform.position.x);
         transform.localScale = new Vector3(-direction, 1, 1);
         rigid.linearVelocity = new Vector2(direction * moveSpeed, rigid.linearVelocity.y);
@@ -304,6 +319,22 @@ public class BossController : MonoBehaviour
         SetState(BossState.Idle);
     }
 
+    public IEnumerator Knockback(Vector2 direction, float power, float duration)
+    {
+        isKnockedBack = true;
+        rigid.linearVelocity = Vector2.zero;
+        rigid.AddForce(new Vector2(direction.x, 0).normalized * power, ForceMode2D.Impulse);
+
+        float timer = 0;
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        rigid.linearVelocity = Vector2.zero;
+        isKnockedBack = false;
+    }
     #endregion
 
     #region Gizmos
